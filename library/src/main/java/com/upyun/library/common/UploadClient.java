@@ -17,15 +17,15 @@ import java.util.concurrent.TimeUnit;
 public class UploadClient {
 
     private static final String TAG = "UploadClient";
-    private static String FORM_HOST = "https://v0.api.upyun.com";
-    private static String BLOCK_HOST = "https://m0.api.upyun.com";
+    private static String FORM_HOST = "http://v0.api.upyun.com";
+    private static String BLOCK_HOST = "http://m0.api.upyun.com";
     private OkHttpClient client;
 
     protected UploadClient() {
         client = new OkHttpClient();
-        client.setConnectTimeout(5000, TimeUnit.MILLISECONDS);
-        client.setReadTimeout(5000, TimeUnit.MILLISECONDS);
-        client.setWriteTimeout(5000, TimeUnit.MILLISECONDS);
+        client.setConnectTimeout(UpConfig.CONNECT_TIMEOUT, TimeUnit.SECONDS);
+        client.setReadTimeout(UpConfig.READ_TIMEOUT, TimeUnit.SECONDS);
+        client.setWriteTimeout(UpConfig.WRITE_TIMEOUT, TimeUnit.SECONDS);
         client.setFollowRedirects(true);
     }
 
@@ -52,7 +52,6 @@ public class UploadClient {
         } else {
             String result = response.body().string();
             response.body().close();
-//            Log.i(TAG, "from:" + result);
             return result;
         }
     }
@@ -73,12 +72,11 @@ public class UploadClient {
             throw new UpYunException("Unexpected code :" + response);
         } else {
             String result = response.body().string();
-//            Log.i(TAG, "blockPost:" + result);
             return result;
         }
     }
 
-    public String blockMutipartPost(final String bucket, final PostData postData) throws IOException, UpYunException {
+    public String blockMutipartPost(String bucket, PostData postData) throws IOException, UpYunException {
         Map<String, String> requestParams = postData.params;
         MultipartBuilder builder = new MultipartBuilder()
                 .type(MultipartBuilder.FORM);
@@ -88,7 +86,7 @@ public class UploadClient {
         }
         builder.addFormDataPart("file", postData.fileName, RequestBody.create(null, postData.data));
         Request request = new Request.Builder()
-                .url(BLOCK_HOST+"/"+bucket)
+                .url(BLOCK_HOST + "/" + bucket)
                 .post(builder.build())
                 .build();
 
@@ -98,7 +96,6 @@ public class UploadClient {
             throw new UpYunException("Unexpected code :" + response);
         } else {
             String result = response.body().string();
-//            Log.i(TAG, "blockMutipartPost:" + result);
             return result;
         }
     }

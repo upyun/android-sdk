@@ -17,7 +17,7 @@ public class UploadManager {
     private UploadClient upLoaderClient;
 
     private UploadManager() {
-        executor = Executors.newCachedThreadPool();
+        executor = Executors.newFixedThreadPool(UpConfig.CONCURRENCY);
         upLoaderClient = new UploadClient();
     }
 
@@ -43,21 +43,27 @@ public class UploadManager {
         } else if (apiKey.isEmpty()) {
             completeListener.onComplete(false, "APIkey或signatureListener不可为空");
             return;
+        } else if (completeListener == null) {
+            completeListener.onComplete(false, "completeListener不可为空");
         }
 
-        final UpProgressListener uiProgressListener = new UpProgressListener() {
-            @Override
-            public void onRequestProgress(final long bytesWrite, final long contentLength) {
-                AsyncRun.run(new Runnable() {
-                    @Override
-                    public void run() {
-                        progressListener.onRequestProgress(bytesWrite, contentLength);
-                    }
-                });
-            }
-        };
+        UpProgressListener uiProgressListener = null;
 
-        final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
+        if (progressListener != null) {
+            uiProgressListener = new UpProgressListener() {
+                @Override
+                public void onRequestProgress(final long bytesWrite, final long contentLength) {
+                    AsyncRun.run(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressListener.onRequestProgress(bytesWrite, contentLength);
+                        }
+                    });
+                }
+            };
+        }
+
+        UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
             public void onComplete(final boolean isSuccess, final String result) {
                 AsyncRun.run(new Runnable() {
@@ -93,21 +99,27 @@ public class UploadManager {
         } else if (signatureListener == null) {
             completeListener.onComplete(false, "APIkey或signatureListener不可为空");
             return;
+        } else if (completeListener == null) {
+            completeListener.onComplete(false, "completeListener不可为空");
         }
 
-        final UpProgressListener uiProgressListener = new UpProgressListener() {
-            @Override
-            public void onRequestProgress(final long bytesWrite, final long contentLength) {
-                AsyncRun.run(new Runnable() {
-                    @Override
-                    public void run() {
-                        progressListener.onRequestProgress(bytesWrite, contentLength);
-                    }
-                });
-            }
-        };
+        UpProgressListener uiProgressListener = null;
 
-        final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
+        if (progressListener != null) {
+            uiProgressListener = new UpProgressListener() {
+                @Override
+                public void onRequestProgress(final long bytesWrite, final long contentLength) {
+                    AsyncRun.run(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressListener.onRequestProgress(bytesWrite, contentLength);
+                        }
+                    });
+                }
+            };
+        }
+
+        UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
             public void onComplete(final boolean isSuccess, final String result) {
                 AsyncRun.run(new Runnable() {
@@ -129,6 +141,5 @@ public class UploadManager {
             BlockUploader uploader = new BlockUploader(upLoaderClient, file, localParams, signatureListener, uiCompleteListener, uiProgressListener);
             executor.execute(uploader);
         }
-
     }
 }

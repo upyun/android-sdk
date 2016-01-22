@@ -8,7 +8,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.upyun.library.common.Params;
-import com.upyun.library.common.UpConfig;
 import com.upyun.library.common.UploadManager;
 import com.upyun.library.listener.SignatureListener;
 import com.upyun.library.listener.UpCompleteListener;
@@ -16,6 +15,7 @@ import com.upyun.library.listener.UpProgressListener;
 import com.upyun.library.utils.UpYunUtils;
 
 import java.io.File;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,11 +25,13 @@ public class MainActivity extends AppCompatActivity {
     public static String KEY = "GqSu2v26RI+Xu3yLdsWfynTS/LM=";
     public static String SPACE = "formtest";
     private String localFilePath = Environment.getExternalStorageDirectory()
-            .getAbsolutePath() + File.separator + "test3.dmg";
+            .getAbsolutePath() + File.separator + "test4.dmg";
     private ProgressBar uploadProgress;
     private TextView textView;
     //保存路径
     String savePath = "/uploads/{year}{mon}{day}/{random32}{.suffix}";
+    //过期时间
+    public static long EXPIRATION = Calendar.getInstance().getTimeInMillis() + 60 * 1000; // 60s
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         //上传空间
         paramsMap.put(Params.BUCKET, SPACE);
         //默认过期时间60s 可自定义
-        paramsMap.put(Params.EXPIRATION, UpConfig.EXPIRATION);
+        paramsMap.put(Params.EXPIRATION, EXPIRATION);
         paramsMap.put(Params.SAVE_KEY, savePath);
         paramsMap.put(Params.RETURN_URL, "httpbin.org/post");
 
@@ -50,8 +52,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onRequestProgress(final long bytesWrite, final long contentLength) {
 
-//                uploadProgress.setProgress((int) ((100 * bytesWrite) / contentLength));
-//                textView.setText((100 * bytesWrite) / contentLength + "%");
+                uploadProgress.setProgress((int) ((100 * bytesWrite) / contentLength));
+                textView.setText((100 * bytesWrite) / contentLength + "%");
                 Log.e(TAG, (100 * bytesWrite) / contentLength + "%");
             }
         };
@@ -59,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         UpCompleteListener completeListener = new UpCompleteListener() {
             @Override
             public void onComplete(boolean isSuccess, String result) {
-//                textView.setText(isSuccess + ":" + result);
+                textView.setText(isSuccess + ":" + result);
                 Log.e(TAG, result);
             }
         };
@@ -72,6 +74,17 @@ public class MainActivity extends AppCompatActivity {
         };
 
         UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
         UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
     }
 }

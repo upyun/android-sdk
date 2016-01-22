@@ -40,6 +40,9 @@ public class BlockUploader implements Runnable {
     private long fileSize;
     private int[] blockIndex;
     private PostData postData;
+    private Map<String, Object> params;
+    private String apiKey;
+    private SignatureListener signatureListener;
 
     public static final String INIT_REQUEST = "INIT_REQUEST";  //初始化请求
     public static final String BLOCK_UPLOAD = "BLOCK_UPLOAD";  //分块上传
@@ -49,46 +52,45 @@ public class BlockUploader implements Runnable {
     public BlockUploader(UploadClient client, File file,
                          Map<String, Object> params, String apiKey, UpCompleteListener completeListener, UpProgressListener progressListener) {
 
-        params.put(Params.BLOCK_NUM, UpYunUtils.getBlockNum(file, UpConfig.BLOCK_SIZE));
-        params.put(Params.FILE_SIZE, file.length());
-        params.put(Params.FILE_MD5, UpYunUtils.md5Hex(file));
-        String path = (String) params.remove(Params.SAVE_KEY);
-        params.put("path", path);
         this.file = file;
+        this.params = params;
         this.client = client;
         this.bucket = (String) params.remove(Params.BUCKET);
         this.progressListener = progressListener;
         this.completeListener = completeListener;
-        this.userPolicy = UpYunUtils.getPolicy(params);
-        this.userSignature = UpYunUtils.getSignature(params, apiKey);
+        this.apiKey = apiKey;
     }
 
     public BlockUploader(UploadClient client, File file, Map<String, Object> params, SignatureListener signatureListener, UpCompleteListener completeListener, UpProgressListener progressListener) {
 
-        params.put(Params.BLOCK_NUM, UpYunUtils.getBlockNum(file, UpConfig.BLOCK_SIZE));
-        params.put(Params.FILE_SIZE, file.length());
-        params.put(Params.FILE_MD5, UpYunUtils.md5Hex(file));
-        String path = (String) params.remove(Params.SAVE_KEY);
-        params.put("path", path);
-        Object[] keys = params.keySet().toArray();
-        Arrays.sort(keys);
-        StringBuffer tmp = new StringBuffer("");
-        for (Object key : keys) {
-            tmp.append(key).append(params.get(key));
-        }
 
         this.file = file;
         this.client = client;
         this.bucket = (String) params.get(Params.BUCKET);
         this.progressListener = progressListener;
         this.completeListener = completeListener;
-        this.userPolicy = UpYunUtils.getPolicy(params);
-        this.userSignature = signatureListener.getSignature(tmp.toString());
+        this.params = params;
+        this.signatureListener = signatureListener;
     }
+
 
     @Override
     public void run() {
         try {
+            params.put(Params.BLOCK_NUM, UpYunUtils.getBlockNum(file, UpConfig.BLOCK_SIZE));
+            params.put(Params.FILE_SIZE, file.length());
+            params.put(Params.FILE_MD5, UpYunUtils.md5Hex(file));
+            String path = (String) params.remove(Params.SAVE_KEY);
+            params.put("path", path);
+            this.userPolicy = UpYunUtils.getPolicy(params);
+            if (apiKey != null) {
+                this.userSignature = UpYunUtils.getSignature(params, apiKey);
+            } else if (signatureListener != null) {
+                this.userSignature = signatureListener.getSignature(getParamsString(params));
+            } else {
+                throw new RuntimeException("apikey 和 signatureListener 不可都为空");
+            }
+
             this.randomAccessFile = new RandomAccessFile(this.file, "r");
             this.fileSize = this.file.length();
             this.totalBlockNum = UpYunUtils.getBlockNum(this.file, this.blockSize);
@@ -149,9 +151,9 @@ public class BlockUploader implements Runnable {
                 completeListener.onComplete(false, e.getMessage());
             }
         } else if (BLOCK_UPLOAD.equals(type)) {
-            byte[] block = null;
+            postData = new PostData();
             try {
-                block = readBlockByIndex(index);
+                postData.data = readBlockByIndex(index);
             } catch (UpYunException e) {
                 completeListener.onComplete(false, e.getMessage());
             }
@@ -160,17 +162,16 @@ public class BlockUploader implements Runnable {
             policyMap.put(Params.SAVE_TOKEN, saveToken);
             policyMap.put(Params.EXPIRATION, expiration);
             policyMap.put(Params.BLOCK_INDEX, blockIndex[index]);
-            policyMap.put(Params.BLOCK_MD5, UpYunUtils.md5(block));
+            policyMap.put(Params.BLOCK_MD5, UpYunUtils.md5(postData.data));
             String policy = UpYunUtils.getPolicy(policyMap);
             String signature = UpYunUtils.getSignature(policyMap, this.tokenSecret);
 
             Map<String, String> map = new HashMap<String, String>();
             map.put(Params.POLICY, policy);
             map.put(Params.SIGNATURE, signature);
-            postData = new PostData();
-            postData.data = block;
             postData.fileName = file.getName();
             postData.params = map;
+
             try {
                 client.blockMutipartPost(this.bucket, postData);
                 if (progressListener != null) {
@@ -190,7 +191,7 @@ public class BlockUploader implements Runnable {
 
     /**
      * 从文件中读取块
-     * <p>
+     * <p/>
      * index begin at 0
      *
      * @param index
@@ -250,6 +251,16 @@ public class BlockUploader implements Runnable {
             }
         }
         return blockIndex;
+    }
+
+    private String getParamsString(Map<String, Object> params) {
+        Object[] keys = params.keySet().toArray();
+        Arrays.sort(keys);
+        StringBuffer tmp = new StringBuffer("");
+        for (Object key : keys) {
+            tmp.append(key).append(params.get(key));
+        }
+        return tmp.toString();
     }
 
 }
