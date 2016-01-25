@@ -6,6 +6,7 @@ import com.upyun.library.listener.UpProgressListener;
 import com.upyun.library.utils.AsyncRun;
 
 import java.io.File;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -47,21 +48,23 @@ public class UploadManager {
             completeListener.onComplete(false, "completeListener不可为空");
         }
 
-        UpProgressListener uiProgressListener = null;
+        if (params.get(Params.EXPIRATION) == null) {
+            params.put(Params.EXPIRATION, Calendar.getInstance().getTimeInMillis() + UpConfig.EXPIRATION);
+        }
 
-        if (progressListener != null) {
-            uiProgressListener = new UpProgressListener() {
-                @Override
-                public void onRequestProgress(final long bytesWrite, final long contentLength) {
-                    AsyncRun.run(new Runnable() {
-                        @Override
-                        public void run() {
+        UpProgressListener uiProgressListener = new UpProgressListener() {
+            @Override
+            public void onRequestProgress(final long bytesWrite, final long contentLength) {
+                AsyncRun.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (progressListener != null) {
                             progressListener.onRequestProgress(bytesWrite, contentLength);
                         }
-                    });
-                }
-            };
-        }
+                    }
+                });
+            }
+        };
 
         UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
@@ -85,7 +88,6 @@ public class UploadManager {
             BlockUploader uploader = new BlockUploader(upLoaderClient, file, localParams, apiKey, uiCompleteListener, uiProgressListener);
             executor.execute(uploader);
         }
-
     }
 
     public void upload(final File file, final Map<String, Object> params, SignatureListener signatureListener, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
@@ -103,21 +105,23 @@ public class UploadManager {
             completeListener.onComplete(false, "completeListener不可为空");
         }
 
-        UpProgressListener uiProgressListener = null;
+        if (params.get(Params.EXPIRATION) == null) {
+            params.put(Params.EXPIRATION, Calendar.getInstance().getTimeInMillis() + UpConfig.EXPIRATION);
+        }
 
-        if (progressListener != null) {
-            uiProgressListener = new UpProgressListener() {
-                @Override
-                public void onRequestProgress(final long bytesWrite, final long contentLength) {
-                    AsyncRun.run(new Runnable() {
-                        @Override
-                        public void run() {
+        UpProgressListener uiProgressListener = new UpProgressListener() {
+            @Override
+            public void onRequestProgress(final long bytesWrite, final long contentLength) {
+                AsyncRun.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (progressListener != null) {
                             progressListener.onRequestProgress(bytesWrite, contentLength);
                         }
-                    });
-                }
-            };
-        }
+                    }
+                });
+            }
+        };
 
         UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override

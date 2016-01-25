@@ -15,7 +15,6 @@ import com.upyun.library.listener.UpProgressListener;
 import com.upyun.library.utils.UpYunUtils;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,14 +24,10 @@ public class MainActivity extends AppCompatActivity {
     public static String KEY = "GqSu2v26RI+Xu3yLdsWfynTS/LM=";
     public static String SPACE = "formtest";
     private String localFilePath = Environment.getExternalStorageDirectory()
-            .getAbsolutePath() + File.separator + "test4.dmg";
+            .getAbsolutePath() + File.separator + "test3.dmg";
     private ProgressBar uploadProgress;
     private TextView textView;
-    //保存路径
     String savePath = "/uploads/{year}{mon}{day}/{random32}{.suffix}";
-    //过期时间
-    public static long EXPIRATION = Calendar.getInstance().getTimeInMillis() + 60 * 1000; // 60s
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,22 +37,21 @@ public class MainActivity extends AppCompatActivity {
         final Map<String, Object> paramsMap = new HashMap<>();
         //上传空间
         paramsMap.put(Params.BUCKET, SPACE);
-        //默认过期时间60s 可自定义
-        paramsMap.put(Params.EXPIRATION, EXPIRATION);
+        //保存路径
         paramsMap.put(Params.SAVE_KEY, savePath);
+        //可选参数（详情见api文档介绍）
         paramsMap.put(Params.RETURN_URL, "httpbin.org/post");
-
         //进度回调，可为空
         UpProgressListener progressListener = new UpProgressListener() {
             @Override
             public void onRequestProgress(final long bytesWrite, final long contentLength) {
-
                 uploadProgress.setProgress((int) ((100 * bytesWrite) / contentLength));
                 textView.setText((100 * bytesWrite) / contentLength + "%");
                 Log.e(TAG, (100 * bytesWrite) / contentLength + "%");
             }
         };
 
+        //结束回调，不可为空
         UpCompleteListener completeListener = new UpCompleteListener() {
             @Override
             public void onComplete(boolean isSuccess, String result) {
@@ -73,18 +67,9 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, null);
         UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, null);
         UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
     }
 }

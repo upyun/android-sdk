@@ -18,6 +18,7 @@ public class FormUploader implements Runnable {
     private String signature;
     private UpProgressListener progressListener;
     private UpCompleteListener completeListener;
+    private int retryTime;
 
 
     public FormUploader(UploadClient client,File file,Map<String,Object> params,String apiKey,UpCompleteListener completeListener,UpProgressListener progressListener) {
@@ -46,7 +47,11 @@ public class FormUploader implements Runnable {
             String response=client.fromUpLoad(file, bucket, policy, signature, progressListener);
             completeListener.onComplete(true,response);
         } catch (Exception e) {
-            completeListener.onComplete(false,e.getMessage());
+            if(++retryTime>UpConfig.RETRY_TIME){
+                completeListener.onComplete(false,e.getMessage());
+            }else {
+                this.run();
+            }
         }
     }
 }
