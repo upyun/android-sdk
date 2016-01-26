@@ -42,10 +42,6 @@ public class BlockUploader implements Runnable {
     private SignatureListener signatureListener;
     private int retryTime;
 
-    public static final String INIT_REQUEST = "INIT_REQUEST";  //初始化请求
-    public static final String BLOCK_UPLOAD = "BLOCK_UPLOAD";  //分块上传
-    public static final String MERGE_REQUEST = "MERGE_REQUES";//合并请求
-
     public BlockUploader(UploadClient client, File file,
                          Map<String, Object> params, String apiKey, UpCompleteListener completeListener, UpProgressListener progressListener) {
         this.file = file;
@@ -90,65 +86,12 @@ public class BlockUploader implements Runnable {
         } catch (FileNotFoundException e) {
             throw new RuntimeException("文件不存在", e);
         }
-        nextTask(INIT_REQUEST, -1);
+        initRequest();
     }
 
-    /**
-     * index 为 blockIndex的下标
-     *
-     * @param type
-     * @param index
-     */
-    private void nextTask(String type, int index) {
-        if (INIT_REQUEST.equals(type)) {
+    private void blockUpload(int index) {
 
-            Map<String, String> paramMap = new LinkedHashMap<>();
-            paramMap.put(Params.POLICY, userPolicy);
-            paramMap.put(Params.SIGNATURE, userSignature);
-            try {
-                String response = client.blockPost(bucket, paramMap);
-                JSONObject initialResult = new JSONObject(response);
-                saveToken = initialResult.optString(Params.SAVE_TOKEN);
-                tokenSecret = initialResult.optString(Params.TOKEN_SECRET);
-                JSONArray array = initialResult.getJSONArray(Params.STATUS);
-                blockIndex = getBlockIndex(array);
-
-                if (blockIndex.length == 0) {
-                    nextTask(MERGE_REQUEST, -1);
-                } else {
-                    // 上传分块
-                    nextTask(BLOCK_UPLOAD, 0);
-                }
-            } catch (Exception e) {
-                if (++retryTime > UpConfig.RETRY_TIME) {
-                    completeListener.onComplete(false, e.toString());
-                } else {
-                    this.nextTask(type, index);
-                }
-            }
-        } else if (MERGE_REQUEST.equals(type)) {
-            HashMap<String, Object> paramsMapFinish = new HashMap<>();
-            paramsMapFinish.put(Params.EXPIRATION, expiration);
-            paramsMapFinish.put(Params.SAVE_TOKEN, saveToken);
-            String policyForMerge = UpYunUtils.getPolicy(paramsMapFinish);
-            String signatureForMerge = UpYunUtils.getSignature(paramsMapFinish, tokenSecret);
-
-            Map<String, String> paramMap = new LinkedHashMap<>();
-            paramMap.put(Params.POLICY, policyForMerge);
-            paramMap.put(Params.SIGNATURE, signatureForMerge);
-
-            try {
-                String response = client.blockPost(bucket, paramMap);
-                progressListener.onRequestProgress(blockIndex.length, blockIndex.length);
-                completeListener.onComplete(true, response);
-            } catch (Exception e) {
-                if (++retryTime > UpConfig.RETRY_TIME) {
-                    completeListener.onComplete(false, e.toString());
-                } else {
-                    this.nextTask(type, index);
-                }
-            }
-        } else if (BLOCK_UPLOAD.equals(type)) {
+        while (true) {
             if (postData == null) {
                 postData = new PostData();
             }
@@ -178,15 +121,15 @@ public class BlockUploader implements Runnable {
                     progressListener.onRequestProgress(index, blockIndex.length);
                 }
                 if (index == (blockIndex.length - 1)) {
-                    nextTask(MERGE_REQUEST, -1);
+                    megreRequest();
+                    break;
                 } else {
-                    nextTask(BLOCK_UPLOAD, index + 1);
+                    index++;
                 }
             } catch (Exception e) {
                 if (++retryTime > UpConfig.RETRY_TIME) {
                     completeListener.onComplete(false, e.toString());
-                } else {
-                    this.nextTask(type, index);
+                    break;
                 }
             } finally {
                 postData = null;
@@ -194,10 +137,61 @@ public class BlockUploader implements Runnable {
         }
     }
 
+    private void megreRequest() {
+        HashMap<String, Object> paramsMapFinish = new HashMap<>();
+        paramsMapFinish.put(Params.EXPIRATION, expiration);
+        paramsMapFinish.put(Params.SAVE_TOKEN, saveToken);
+        String policyForMerge = UpYunUtils.getPolicy(paramsMapFinish);
+        String signatureForMerge = UpYunUtils.getSignature(paramsMapFinish, tokenSecret);
+
+        Map<String, String> paramMap = new LinkedHashMap<>();
+        paramMap.put(Params.POLICY, policyForMerge);
+        paramMap.put(Params.SIGNATURE, signatureForMerge);
+
+        try {
+            String response = client.Post(bucket, paramMap);
+            progressListener.onRequestProgress(blockIndex.length, blockIndex.length);
+            completeListener.onComplete(true, response);
+        } catch (Exception e) {
+            if (++retryTime > UpConfig.RETRY_TIME) {
+                completeListener.onComplete(false, e.toString());
+            } else {
+                megreRequest();
+            }
+        }
+    }
+
+    private void initRequest() {
+        Map<String, String> paramMap = new LinkedHashMap<>();
+        paramMap.put(Params.POLICY, userPolicy);
+        paramMap.put(Params.SIGNATURE, userSignature);
+        try {
+            String response = client.Post(bucket, paramMap);
+            JSONObject initialResult = new JSONObject(response);
+            saveToken = initialResult.optString(Params.SAVE_TOKEN);
+            tokenSecret = initialResult.optString(Params.TOKEN_SECRET);
+            JSONArray array = initialResult.getJSONArray(Params.STATUS);
+            blockIndex = getBlockIndex(array);
+
+            if (blockIndex.length == 0) {
+                megreRequest();
+            } else {
+                // 上传分块
+                blockUpload(0);
+            }
+        } catch (Exception e) {
+            if (++retryTime > UpConfig.RETRY_TIME) {
+                completeListener.onComplete(false, e.toString());
+            } else {
+                initRequest();
+            }
+        }
+    }
+
 
     /**
      * 从文件中读取块
-     * <p>
+     * <p/>
      * index begin at 0
      *
      * @param index

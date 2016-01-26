@@ -52,7 +52,7 @@ public class UploadClient {
         }
     }
 
-    public String blockPost(String bucket, final Map<String, String> requestParams) throws IOException, UpYunException {
+    public String Post(String bucket, final Map<String, String> requestParams) throws IOException, UpYunException {
         FormEncodingBuilder builder = new FormEncodingBuilder();
         for (Map.Entry entry : requestParams.entrySet()) {
             builder.add((String) entry.getKey(), (String) entry.getValue());
