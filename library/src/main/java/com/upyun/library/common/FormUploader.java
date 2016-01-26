@@ -48,7 +48,7 @@ public class FormUploader implements Runnable {
             completeListener.onComplete(true,response);
         } catch (Exception e) {
             if(++retryTime>UpConfig.RETRY_TIME){
-                completeListener.onComplete(false,e.getMessage());
+                completeListener.onComplete(false,e.toString());
             }else {
                 this.run();
             }

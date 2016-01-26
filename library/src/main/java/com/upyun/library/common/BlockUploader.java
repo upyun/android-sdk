@@ -121,7 +121,7 @@ public class BlockUploader implements Runnable {
                 }
             } catch (Exception e) {
                 if (++retryTime > UpConfig.RETRY_TIME) {
-                    completeListener.onComplete(false, e.getMessage());
+                    completeListener.onComplete(false, e.toString());
                 } else {
                     this.nextTask(type, index);
                 }
@@ -143,7 +143,7 @@ public class BlockUploader implements Runnable {
                 completeListener.onComplete(true, response);
             } catch (Exception e) {
                 if (++retryTime > UpConfig.RETRY_TIME) {
-                    completeListener.onComplete(false, e.getMessage());
+                    completeListener.onComplete(false, e.toString());
                 } else {
                     this.nextTask(type, index);
                 }
@@ -155,7 +155,7 @@ public class BlockUploader implements Runnable {
             try {
                 postData.data = readBlockByIndex(index);
             } catch (UpYunException e) {
-                completeListener.onComplete(false, e.getMessage());
+                completeListener.onComplete(false, e.toString());
             }
 
             HashMap<String, Object> policyMap = new HashMap<>();
@@ -184,7 +184,7 @@ public class BlockUploader implements Runnable {
                 }
             } catch (Exception e) {
                 if (++retryTime > UpConfig.RETRY_TIME) {
-                    completeListener.onComplete(false, e.getMessage());
+                    completeListener.onComplete(false, e.toString());
                 } else {
                     this.nextTask(type, index);
                 }
