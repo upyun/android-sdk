@@ -44,13 +44,9 @@ UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signature
  ```
  
 ## 配置说明
-在UpConfig中可以对sdk的一些参数进行配置。
-
-## 错误说明
-请参照[API错误码表](http://docs.upyun.com/api/errno/#api)
-
+	在UpConfig中可以对sdk的一些参数进行配置，
 ## 运行环境
  android 2.3（API10） 以上环境
  
-## 代码许可 
-Licenses [Apache-2.0](http://opensource.org/licenses/apache2.0.php) 
+## 代码许可
+Licenses [Apache-2.0](http://opensource.org/licenses/apache2.0.php)
