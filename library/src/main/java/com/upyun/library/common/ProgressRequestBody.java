@@ -32,7 +32,7 @@ public class ProgressRequestBody extends RequestBody {
     }
 
     public void writeTo(BufferedSink sink) throws IOException {
-        if(this.bufferedSink == null) {
+        if (this.bufferedSink == null) {
             this.bufferedSink = Okio.buffer(this.sink(sink));
         }
 
@@ -47,7 +47,7 @@ public class ProgressRequestBody extends RequestBody {
 
             public void write(Buffer source, long byteCount) throws IOException {
                 super.write(source, byteCount);
-                if(this.contentLength == 0L) {
+                if (this.contentLength == 0L) {
                     this.contentLength = ProgressRequestBody.this.contentLength();
                 }
 

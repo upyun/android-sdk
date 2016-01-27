@@ -21,10 +21,10 @@ public class FormUploader implements Runnable {
     private int retryTime;
 
 
-    public FormUploader(UploadClient client,File file,Map<String,Object> params,String apiKey,UpCompleteListener completeListener,UpProgressListener progressListener) {
+    public FormUploader(UploadClient client, File file, Map<String, Object> params, String apiKey, UpCompleteListener completeListener, UpProgressListener progressListener) {
         this.client = client;
         this.file = file;
-        this.bucket = (String)params.get(Params.BUCKET);
+        this.bucket = (String) params.get(Params.BUCKET);
         this.policy = UpYunUtils.getPolicy(params);
         this.signature = UpYunUtils.getSignature(policy, apiKey);
         this.completeListener = completeListener;
@@ -34,9 +34,9 @@ public class FormUploader implements Runnable {
     public FormUploader(UploadClient client, File file, Map<String, Object> params, SignatureListener signatureListener, UpCompleteListener completeListener, UpProgressListener progressListener) {
         this.client = client;
         this.file = file;
-        this.bucket = (String)params.get(Params.BUCKET);
+        this.bucket = (String) params.get(Params.BUCKET);
         this.policy = UpYunUtils.getPolicy(params);
-        this.signature =signatureListener.getSignature(policy+"&");
+        this.signature = signatureListener.getSignature(policy + "&");
         this.completeListener = completeListener;
         this.progressListener = progressListener;
     }
@@ -44,12 +44,12 @@ public class FormUploader implements Runnable {
     @Override
     public void run() {
         try {
-            String response=client.fromUpLoad(file, bucket, policy, signature, progressListener);
-            completeListener.onComplete(true,response);
+            String response = client.fromUpLoad(file, bucket, policy, signature, progressListener);
+            completeListener.onComplete(true, response);
         } catch (Exception e) {
-            if(++retryTime>UpConfig.RETRY_TIME){
-                completeListener.onComplete(false,e.toString());
-            }else {
+            if (++retryTime > UpConfig.RETRY_TIME) {
+                completeListener.onComplete(false, e.toString());
+            } else {
                 this.run();
             }
         }

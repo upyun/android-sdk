@@ -23,28 +23,28 @@ public class Params {
     x-gmkerl-exif-switch	否	是否保留 exif 信息，仅在搭配 x-gmkerl-crop，x-gmkerl-type，x-gmkerl-thumbnail 时有效。
     ext-param	否	额外参数，UTF-8 编码，并小于 255 个字符 [注 5]*/
     //必选参数
-    public final static String BUCKET="bucket";
-    public final static String SAVE_KEY="save-key";
-    public final static String EXPIRATION="expiration";
+    public final static String BUCKET = "bucket";
+    public final static String SAVE_KEY = "save-key";
+    public final static String EXPIRATION = "expiration";
     //可选参数
-    public final static String ALLOW_FILE_TYPE="allow-file-type";
-    public final static String CONTENT_LENGTH_RANGE="content-length-range";
-    public final static String CONTENT_MD5="content-md5";
-    public final static String CONTENT_SECRET="content-secret";
-    public final static String CONTENT_ECRET="content-secret";
-    public final static String CONTENT_TYPE="content-type";
-    public final static String IMAGE_WIDTH_RANGE="image-width-range";
-    public final static String NOTIFY_URL="notify-url";
-    public final static String RETURN_URL="return-url";
-    public final static String X_GMKERL_THUMBNAIL="x-gmkerl-thumbnail";
-    public final static String X_GMKERL_TYPE="x-gmkerl-type";
-    public final static String X_GMKERL_VALUE="x-gmkerl-value";
-    public final static String X_GMKERL_QUALITY="x-gmkerl-quality";
-    public final static String X_GMKERL_UNSHARP="x-gmkerl-unsharp";
-    public final static String X_GMKERL_ROTATE="x-gmkerl-rotate";
-    public final static String X_GMKERL_CROP="x-gmkerl-crop";
-    public final static String X_GMKERL_EXIF_SWITCH="x-gmkerl-exif-switch";
-    public final static String EXT_PARAM="ext-param";
+    public final static String ALLOW_FILE_TYPE = "allow-file-type";
+    public final static String CONTENT_LENGTH_RANGE = "content-length-range";
+    public final static String CONTENT_MD5 = "content-md5";
+    public final static String CONTENT_SECRET = "content-secret";
+    public final static String CONTENT_ECRET = "content-secret";
+    public final static String CONTENT_TYPE = "content-type";
+    public final static String IMAGE_WIDTH_RANGE = "image-width-range";
+    public final static String NOTIFY_URL = "notify-url";
+    public final static String RETURN_URL = "return-url";
+    public final static String X_GMKERL_THUMBNAIL = "x-gmkerl-thumbnail";
+    public final static String X_GMKERL_TYPE = "x-gmkerl-type";
+    public final static String X_GMKERL_VALUE = "x-gmkerl-value";
+    public final static String X_GMKERL_QUALITY = "x-gmkerl-quality";
+    public final static String X_GMKERL_UNSHARP = "x-gmkerl-unsharp";
+    public final static String X_GMKERL_ROTATE = "x-gmkerl-rotate";
+    public final static String X_GMKERL_CROP = "x-gmkerl-crop";
+    public final static String X_GMKERL_EXIF_SWITCH = "x-gmkerl-exif-switch";
+    public final static String EXT_PARAM = "ext-param";
 
 
     public static final String SIGNATURE = "signature";
