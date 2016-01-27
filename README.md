@@ -34,7 +34,6 @@ UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signature
 
 其他详情见APP module 下的[MainActivity](http://gitlab.widget-inc.com/upyun-sdk/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
 
-
  ## 使用说明：
  1.直接下载JAR包复制进项目使用。
  
@@ -43,6 +42,9 @@ UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signature
  ```
  compile 'com.upyun:library:1.0.1'
  ```
+ 
+ ## 配置说明
+	在UpConfig中可以对sdk的一些参数进行配置，
  ## 运行环境
  android 2.3（API10） 以上环境
  
