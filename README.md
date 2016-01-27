@@ -1,6 +1,6 @@
- # Upyun Android SDK
+# Upyun Android SDK
 
- ## 演示代码
+## 演示代码
 
 ```
 UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
@@ -34,7 +34,7 @@ UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signature
 
 其他详情见APP module 下的[MainActivity](http://gitlab.widget-inc.com/upyun-sdk/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
 
- ## 使用说明：
+## 使用说明：
  1.直接下载JAR包复制进项目使用。
  
  2.sdk已经上传JCenter，android studio的用户可以直接在gradle中添加一条dependencies使用
@@ -43,10 +43,14 @@ UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signature
  compile 'com.upyun:library:1.0.1'
  ```
  
- ## 配置说明
-	在UpConfig中可以对sdk的一些参数进行配置，
- ## 运行环境
+## 配置说明
+在UpConfig中可以对sdk的一些参数进行配置。
+
+## 错误说明
+请参照[API错误码表](http://docs.upyun.com/api/errno/#api)
+
+## 运行环境
  android 2.3（API10） 以上环境
  
- ## 代码许可
+## 代码许可 
 Licenses [Apache-2.0](http://opensource.org/licenses/apache2.0.php) 
