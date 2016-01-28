@@ -22,7 +22,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class BlockUploader implements Runnable {
+    private static final String TAG = "BlockUploader";
     private String bucket;
+    private String url;
     private long expiration;
     private UpProgressListener progressListener;
     private UpCompleteListener completeListener;
@@ -42,23 +44,13 @@ public class BlockUploader implements Runnable {
     private SignatureListener signatureListener;
     private int retryTime;
 
-    public BlockUploader(UploadClient client, File file,
-                         Map<String, Object> params, String apiKey, UpCompleteListener completeListener, UpProgressListener progressListener) {
+    public BlockUploader(UploadClient upLoaderClient, File file, Map<String, Object> localParams, String apiKey, SignatureListener signatureListener, UpCompleteListener uiCompleteListener, UpProgressListener uiProgressListener) {
+        this.client = upLoaderClient;
         this.file = file;
-        this.params = params;
-        this.client = client;
-        this.progressListener = progressListener;
-        this.completeListener = completeListener;
+        this.params = localParams;
+        this.progressListener = uiProgressListener;
+        this.completeListener = uiCompleteListener;
         this.apiKey = apiKey;
-    }
-
-    public BlockUploader(UploadClient client, File file, Map<String, Object> params, SignatureListener signatureListener, UpCompleteListener completeListener, UpProgressListener progressListener) {
-
-        this.file = file;
-        this.params = params;
-        this.client = client;
-        this.progressListener = progressListener;
-        this.completeListener = completeListener;
         this.signatureListener = signatureListener;
     }
 
@@ -66,6 +58,7 @@ public class BlockUploader implements Runnable {
     public void run() {
         try {
             this.bucket = (String) params.remove(Params.BUCKET);
+            this.url = UpConfig.BLOCK_HOST + "/" + this.bucket;
             this.expiration = (long) params.get(Params.EXPIRATION);
             params.put(Params.BLOCK_NUM, UpYunUtils.getBlockNum(file, UpConfig.BLOCK_SIZE));
             params.put(Params.FILE_SIZE, file.length());
@@ -78,7 +71,7 @@ public class BlockUploader implements Runnable {
             } else if (signatureListener != null) {
                 this.userSignature = signatureListener.getSignature(getParamsString(params));
             } else {
-                throw new RuntimeException("apikey 和 signatureListener 不可都为空");
+                throw new RuntimeException("apikey 和 signatureListener 不可都为null");
             }
 
             this.randomAccessFile = new RandomAccessFile(this.file, "r");
@@ -116,17 +109,18 @@ public class BlockUploader implements Runnable {
             postData.params = map;
 
             try {
-                client.blockMultipartPost(this.bucket, postData);
+                client.blockMultipartPost(this.url, postData);
                 if (progressListener != null) {
                     progressListener.onRequestProgress(index, blockIndex.length);
                 }
+
                 if (index == (blockIndex.length - 1)) {
                     megreRequest();
                     break;
                 } else {
                     index++;
                 }
-            } catch (Exception e) {
+            } catch (IOException | UpYunException e) {
                 if (++retryTime > UpConfig.RETRY_TIME) {
                     completeListener.onComplete(false, e.toString());
                     break;
@@ -149,10 +143,10 @@ public class BlockUploader implements Runnable {
         paramMap.put(Params.SIGNATURE, signatureForMerge);
 
         try {
-            String response = client.Post(bucket, paramMap);
+            String response = client.post(url, paramMap);
             progressListener.onRequestProgress(blockIndex.length, blockIndex.length);
             completeListener.onComplete(true, response);
-        } catch (Exception e) {
+        } catch (IOException | UpYunException e) {
             if (++retryTime > UpConfig.RETRY_TIME) {
                 completeListener.onComplete(false, e.toString());
             } else {
@@ -166,7 +160,7 @@ public class BlockUploader implements Runnable {
         paramMap.put(Params.POLICY, userPolicy);
         paramMap.put(Params.SIGNATURE, userSignature);
         try {
-            String response = client.Post(bucket, paramMap);
+            String response = client.post(url, paramMap);
             JSONObject initialResult = new JSONObject(response);
             saveToken = initialResult.optString(Params.SAVE_TOKEN);
             tokenSecret = initialResult.optString(Params.TOKEN_SECRET);
@@ -179,12 +173,14 @@ public class BlockUploader implements Runnable {
                 // 上传分块
                 blockUpload(0);
             }
-        } catch (Exception e) {
+        } catch (IOException | UpYunException e) {
             if (++retryTime > UpConfig.RETRY_TIME) {
                 completeListener.onComplete(false, e.toString());
             } else {
                 initRequest();
             }
+        } catch (JSONException e) {
+            throw new RuntimeException("json 解析出错", e);
         }
     }
 

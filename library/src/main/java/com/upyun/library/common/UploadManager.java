@@ -17,6 +17,10 @@ public class UploadManager {
     private ExecutorService executor;
     private UploadClient upLoaderClient;
 
+    enum UploadType {
+        FORM, BLOCK
+    }
+
     private UploadManager() {
         executor = Executors.newFixedThreadPool(UpConfig.CONCURRENCY);
         upLoaderClient = new UploadClient();
@@ -34,75 +38,42 @@ public class UploadManager {
     }
 
     public void upload(final File file, final Map<String, Object> params, String apiKey, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
-
-        if (file == null) {
-            completeListener.onComplete(false, "文件不可以为空");
-            return;
-        } else if (params == null) {
-            completeListener.onComplete(false, "参数不可为空");
-            return;
-        } else if (apiKey.isEmpty()) {
-            completeListener.onComplete(false, "APIkey或signatureListener不可为空");
-            return;
-        } else if (completeListener == null) {
-            completeListener.onComplete(false, "completeListener不可为空");
-        }
-
-        if (params.get(Params.EXPIRATION) == null) {
-            params.put(Params.EXPIRATION, Calendar.getInstance().getTimeInMillis() + UpConfig.EXPIRATION);
-        }
-
-        UpProgressListener uiProgressListener = new UpProgressListener() {
-            @Override
-            public void onRequestProgress(final long bytesWrite, final long contentLength) {
-                AsyncRun.run(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (progressListener != null) {
-                            progressListener.onRequestProgress(bytesWrite, contentLength);
-                        }
-                    }
-                });
-            }
-        };
-
-        UpCompleteListener uiCompleteListener = new UpCompleteListener() {
-            @Override
-            public void onComplete(final boolean isSuccess, final String result) {
-                AsyncRun.run(new Runnable() {
-                    @Override
-                    public void run() {
-                        completeListener.onComplete(isSuccess, result);
-                    }
-                });
-            }
-        };
-
-        Map<String, Object> localParams = new HashMap<>();
-        localParams.putAll(params);
-
-        if (file.length() < UpConfig.FILE_BOUND) {
-            FormUploader formUploader = new FormUploader(upLoaderClient, file, localParams, apiKey, uiCompleteListener, uiProgressListener);
-            executor.execute(formUploader);
-        } else {
-            BlockUploader uploader = new BlockUploader(upLoaderClient, file, localParams, apiKey, uiCompleteListener, uiProgressListener);
-            executor.execute(uploader);
-        }
+        this.upload(file, params, apiKey, null, completeListener, progressListener);
     }
 
     public void upload(final File file, final Map<String, Object> params, SignatureListener signatureListener, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
+        this.upload(file, params, null, signatureListener, completeListener, progressListener);
+    }
 
+    public void formUpload(final File file, final Map<String, Object> params, String apiKey, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
+        this.upload(UploadType.FORM, file, params, apiKey, null, completeListener, progressListener);
+    }
+
+    public void formUpload(final File file, final Map<String, Object> params, SignatureListener signatureListener, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
+        this.upload(UploadType.FORM, file, params, null, signatureListener, completeListener, progressListener);
+    }
+
+    public void blockUpload(final File file, final Map<String, Object> params, String apiKey, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
+        this.upload(UploadType.BLOCK, file, params, apiKey, null, completeListener, progressListener);
+    }
+
+    public void blockUpload(final File file, final Map<String, Object> params, SignatureListener signatureListener, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
+        this.upload(UploadType.BLOCK, file, params, null, signatureListener, completeListener, progressListener);
+    }
+
+    protected void upload(UploadType type, final File file, final Map<String, Object> params, String apiKey, SignatureListener signatureListener, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
         if (file == null) {
             completeListener.onComplete(false, "文件不可以为空");
             return;
         } else if (params == null) {
             completeListener.onComplete(false, "参数不可为空");
             return;
-        } else if (signatureListener == null) {
-            completeListener.onComplete(false, "APIkey或signatureListener不可为空");
+        } else if (apiKey == null && signatureListener == null) {
+            completeListener.onComplete(false, "APIkey和signatureListener不可同时为null");
             return;
         } else if (completeListener == null) {
             completeListener.onComplete(false, "completeListener不可为空");
+            return;
         }
 
         if (params.get(Params.EXPIRATION) == null) {
@@ -137,13 +108,23 @@ public class UploadManager {
 
         Map<String, Object> localParams = new HashMap<>();
         localParams.putAll(params);
+        Runnable uploadRunnable = null;
+        switch (type) {
+            case FORM:
+                uploadRunnable = new FormUploader(upLoaderClient, file, localParams, apiKey, signatureListener, uiCompleteListener, uiProgressListener);
+                break;
+            case BLOCK:
+                uploadRunnable = new BlockUploader(upLoaderClient, file, localParams, apiKey, signatureListener, uiCompleteListener, uiProgressListener);
+                break;
+        }
+        executor.execute(uploadRunnable);
+    }
 
+    protected void upload(final File file, final Map<String, Object> params, String apiKey, SignatureListener signatureListener, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
         if (file.length() < UpConfig.FILE_BOUND) {
-            FormUploader formUploader = new FormUploader(upLoaderClient, file, localParams, signatureListener, uiCompleteListener, uiProgressListener);
-            executor.execute(formUploader);
+            this.upload(UploadType.FORM, file, params, apiKey, signatureListener, completeListener, progressListener);
         } else {
-            BlockUploader uploader = new BlockUploader(upLoaderClient, file, localParams, signatureListener, uiCompleteListener, uiProgressListener);
-            executor.execute(uploader);
+            this.upload(UploadType.BLOCK, file, params, apiKey, signatureListener, completeListener, progressListener);
         }
     }
 }

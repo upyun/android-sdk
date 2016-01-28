@@ -19,7 +19,7 @@ public class UploadClient {
     private static final String TAG = "UploadClient";
     private OkHttpClient client;
 
-    protected UploadClient() {
+    public UploadClient() {
         client = new OkHttpClient();
         client.setConnectTimeout(UpConfig.CONNECT_TIMEOUT, TimeUnit.SECONDS);
         client.setReadTimeout(UpConfig.READ_TIMEOUT, TimeUnit.SECONDS);
@@ -27,7 +27,7 @@ public class UploadClient {
         client.setFollowRedirects(true);
     }
 
-    public String fromUpLoad(File file, String bucket, String policy, String signature, UpProgressListener listener) throws IOException, UpYunException {
+    public String fromUpLoad(File file, String url, String policy, String signature, UpProgressListener listener) throws IOException, UpYunException {
 
         RequestBody requestBody = new MultipartBuilder()
                 .type(MultipartBuilder.FORM)
@@ -40,38 +40,38 @@ public class UploadClient {
             requestBody = ProgressHelper.addProgressListener(requestBody, listener);
         }
         Request request = new Request.Builder()
-                .url(UpConfig.FORM_HOST + "/" + bucket)
+                .url(url)
                 .post(requestBody)
                 .build();
 
         Response response = client.newCall(request).execute();
         if (!response.isSuccessful()) {
-            throw new UpYunException("Unexpected code :" + response);
+            throw new UpYunException("Unexpected code :" + response.body().string());
         } else {
             return response.body().string();
         }
     }
 
-    public String Post(String bucket, final Map<String, String> requestParams) throws IOException, UpYunException {
+    public String post(String url, final Map<String, String> requestParams) throws IOException, UpYunException {
         FormEncodingBuilder builder = new FormEncodingBuilder();
         for (Map.Entry entry : requestParams.entrySet()) {
             builder.add((String) entry.getKey(), (String) entry.getValue());
         }
         Request request = new Request.Builder()
-                .url(UpConfig.BLOCK_HOST + "/" + bucket)
+                .url(url)
                 .post(builder.build())
                 .build();
 
         Response response = client.newCall(request).execute();
 
         if (!response.isSuccessful()) {
-            throw new UpYunException("Unexpected code :" + response);
+            throw new UpYunException("Unexpected code :" + response.body().string());
         } else {
             return response.body().string();
         }
     }
 
-    public String blockMultipartPost(String bucket, PostData postData) throws IOException, UpYunException {
+    public String blockMultipartPost(String url, PostData postData) throws IOException, UpYunException {
         Map<String, String> requestParams = postData.params;
         MultipartBuilder builder = new MultipartBuilder()
                 .type(MultipartBuilder.FORM);
@@ -81,14 +81,14 @@ public class UploadClient {
         }
         builder.addFormDataPart("file", postData.fileName, RequestBody.create(null, postData.data));
         Request request = new Request.Builder()
-                .url(UpConfig.BLOCK_HOST + "/" + bucket)
+                .url(url)
                 .post(builder.build())
                 .build();
 
         Response response = client.newCall(request).execute();
 
         if (!response.isSuccessful()) {
-            throw new UpYunException("Unexpected code :" + response);
+            throw new UpYunException("Unexpected code :" + response.body().string());
         } else {
             return response.body().string();
         }

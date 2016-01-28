@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onComplete(boolean isSuccess, String result) {
                 textView.setText(isSuccess + ":" + result);
-                Log.e(TAG, result);
+                Log.e(TAG, isSuccess + ":" + result);
             }
         };
 
@@ -67,9 +67,12 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, null);
         UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, null);
         UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+
     }
 }
