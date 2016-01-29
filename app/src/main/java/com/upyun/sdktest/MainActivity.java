@@ -1,8 +1,8 @@
 package com.upyun.sdktest;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -18,7 +18,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
     public static String KEY = "GqSu2v26RI+Xu3yLdsWfynTS/LM=";
