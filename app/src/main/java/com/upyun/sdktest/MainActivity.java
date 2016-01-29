@@ -37,8 +37,9 @@ public class MainActivity extends AppCompatActivity {
         final Map<String, Object> paramsMap = new HashMap<>();
         //上传空间
         paramsMap.put(Params.BUCKET, SPACE);
-        //保存路径
+        //保存路径，任选其中一个
         paramsMap.put(Params.SAVE_KEY, savePath);
+//        paramsMap.put(Params.PATH, savePath);
         //可选参数（详情见api文档介绍）
         paramsMap.put(Params.RETURN_URL, "httpbin.org/post");
         //进度回调，可为空

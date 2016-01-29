@@ -63,8 +63,11 @@ public class BlockUploader implements Runnable {
             params.put(Params.BLOCK_NUM, UpYunUtils.getBlockNum(file, UpConfig.BLOCK_SIZE));
             params.put(Params.FILE_SIZE, file.length());
             params.put(Params.FILE_MD5, UpYunUtils.md5Hex(file));
-            String path = (String) params.remove(Params.SAVE_KEY);
-            params.put("path", path);
+            String save_path = (String) params.remove(Params.SAVE_KEY);
+            String path = (String) params.get(Params.PATH);
+            if (save_path != null && path == null) {
+                params.put(Params.PATH, save_path);
+            }
             this.userPolicy = UpYunUtils.getPolicy(params);
             if (apiKey != null) {
                 this.userSignature = UpYunUtils.getSignature(params, apiKey);
