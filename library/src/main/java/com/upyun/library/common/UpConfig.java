@@ -16,7 +16,7 @@ public class UpConfig {
     public static final int RETRY_TIME = 2;
 
     //超时设置 单位秒(SECONDS)
-    public static int CONNECT_TIMEOUT = 10;
-    public static int READ_TIMEOUT = 10;
-    public static int WRITE_TIMEOUT = 10;
+    public static int CONNECT_TIMEOUT = 15;
+    public static int READ_TIMEOUT = 30;
+    public static int WRITE_TIMEOUT = 30;
 }
