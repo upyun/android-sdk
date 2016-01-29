@@ -18,23 +18,23 @@ compile 'com.upyun:library:1.0.2'
 ```
 ## 参数设置
 
-在 [UpConfig](http://gitlab.widget-inc.com/upyun-sdk/android-sdk/blob/master/library/src/main/java/com/upyun/library/common/UpConfig.java) 中可以对 SDK 的一些参数进行配置。
+在 [UpConfig](https://github.com/upyun/android-sdk/blob/master/library/src/main/java/com/upyun/library/common/UpConfig.java) 中可以对 SDK 的一些参数进行配置。
 
-* BLOCK_SIZE 单个分块大小
-* FILE_BOUND 自动判断使用分块或者表单上传的文件大小界限
-* CONCURRENCY 上传线程并发数量
-* EXPIRATION 默认过期时间偏移量（秒）
-* FORM_HOST 表单上传 HOST
-* BLOCK_HOST 分块上传 HOST
-* RETRY_TIME 失败重传次数
-* CONNECT_TIMEOUT 连接超时（秒）
-* READ_TIMEOUT 读超时（秒）
-* WRITE_TIMEOUT 写超时（秒）
+* `BLOCK_SIZE` 单个分块大小
+* `FILE_BOUND` 自动判断使用分块或者表单上传的文件大小界限
+* `CONCURRENCY` 上传线程并发数量
+* `EXPIRATION` 默认过期时间偏移量（秒）
+* `FORM_HOST` 表单上传 HOST
+* `BLOCK_HOST` 分块上传 HOST
+* `RETRY_TIME` 失败重传次数
+* `CONNECT_TIMEOUT` 连接超时（秒）
+* `READ_TIMEOUT` 读超时（秒）
+* `WRITE_TIMEOUT` 写超时（秒）
 
 
 ## 上传接口
 
-> 详细示例请见 app module 下的 [MainActivity](http://gitlab.widget-inc.com/upyun-sdk/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
+> 详细示例请见 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
 
 
 ### 文件上传
@@ -48,12 +48,12 @@ UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signature
 
 参数说明：
 
-* 'localFilePath'  文件路径
-* 'paramsMap'  参数键值对
-* 'KEY'  表单 API 验证密钥（form_api_secret）
-* 'signatureListener'  获取签名回调
-* 'completeListener'  结束回调(回调到 UI 线程，不可为 NULL)
-* 'progressListener'  进度条回调(回调到 UI 线程，可为 NULL)
+* `localFilePath`  文件路径
+* `paramsMap`  参数键值对
+* `KEY`  表单 API 验证密钥（form_api_secret）
+* `signatureListener`  获取签名回调
+* `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
+* `progressListener`  进度条回调(回调到 UI 线程，可为 NULL)
 
 
 两种上传方式可根据自己情况选择一种，KEY 用户可直接保存在客户端，signatureListener 用户可以通过请求服务器获取签名返回客户端。signatureListener 回调接口规则如下：
