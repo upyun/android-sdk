@@ -1,6 +1,7 @@
 # UPYUN Android SDK
 
 [![Build Status](https://travis-ci.org/upyun/android-sdk.svg?branch=master)](https://travis-ci.org/upyun/android-sdk)
+[ ![Download](https://api.bintray.com/packages/yemingm/maven/upyun-android-sdk/images/download.svg) ](https://bintray.com/yemingm/maven/upyun-android-sdk/_latestVersion)
 
 UPYUN Android SDK, 集成：
 - [UPYUN HTTP FORM 接口](http://docs.upyun.com/api/form_api/)
@@ -9,12 +10,12 @@ UPYUN Android SDK, 集成：
 
 ## 使用说明：
 
-1.直接[下载 JAR 包](http://jcenter.bintray.com/com/upyun/library/1.0.3/)复制进项目使用, SDK 依赖 [okhttp](http://square.github.io/okhttp/)。
+1.直接[下载 JAR 包](http://jcenter.bintray.com/com/upyun/upyun-android-sdk/1.0.0/)复制进项目使用, SDK 依赖 [okhttp](http://square.github.io/okhttp/)。
 
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
 ```
-compile 'com.upyun:library:1.0.3'
+compile 'com.upyun:upyun-android-sdk:1.0.0'
 ```
 ## 参数设置
 
@@ -59,12 +60,12 @@ UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signature
 两种上传方式可根据自己情况选择一种，`KEY` 用户可直接保存在客户端，`signatureListener` 用户可以通过请求服务器获取签名返回客户端。`signatureListener` 回调接口规则如下：
 
 ```
-        SignatureListener signatureListener=new SignatureListener() {
-            @Override
-            public String getSignature(String raw) {
-                return UpYunUtils.md5(raw+KEY);
-            }
-        };
+SignatureListener signatureListener=new SignatureListener() {
+    @Override
+    public String getSignature(String raw) {
+        return UpYunUtils.md5(raw+KEY);
+    }
+};
         
 ```
 将参数 `raw` 传给后台服务器和表单密匙连接后做一次 md5 运算返回结果。
