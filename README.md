@@ -92,7 +92,10 @@ UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, sign
 参数说明：同上。
 
 ## 测试
+
+```
 ./gradlew connectedAndroidTest
+```
  
 
 ## 错误码说明
