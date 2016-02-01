@@ -9,7 +9,7 @@ UPYUN Android SDK, 集成：
 
 ## 使用说明：
 
-1.直接[下载 JAR 包](http://jcenter.bintray.com/com/upyun/library/1.0.3/)复制进项目使用,sdk 依赖 [okhttp](http://square.github.io/okhttp/)。
+1.直接[下载 JAR 包](http://jcenter.bintray.com/com/upyun/library/1.0.3/)复制进项目使用, SDK 依赖 [okhttp](http://square.github.io/okhttp/)。
 
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
