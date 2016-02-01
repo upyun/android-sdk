@@ -23,30 +23,3 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.squareup.okhttp:okhttp:2.5.0'
 }
-
-ext {
-    bintrayRepo = 'maven'
-    bintrayName = 'upyun-android-sdk'
-
-    publishedGroupId = 'com.upyun'
-    libraryName = 'upyun-android-sdk'
-    artifact = 'upyun-android-sdk'
-
-    libraryDescription = 'A upload sdk on Android'
-
-    siteUrl = 'https://github.com/upyun/android-sdk'
-    gitUrl = 'https://github.com/upyun/android-sdk.git'
-
-    libraryVersion = '1.0.0'
-
-    developerId = 'yemingm'
-    developerName = 'yemingm'
-    developerEmail = 'yemingm@qq.com'
-
-    licenseName = 'The Apache Software License, Version 2.0'
-    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    allLicenses = ["Apache-2.0"]
-}
-
-apply from: 'installv1.gradle'
-apply from: 'bintrayv1.gradle'
