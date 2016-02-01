@@ -19,7 +19,7 @@ compile 'com.upyun:upyun-android-sdk:1.0.0'
 ```
 ## 参数设置
 
-在 [UpConfig](https://github.com/upyun/android-sdk/blob/master/library/src/main/java/com/upyun/library/common/UpConfig.java) 中可以对 SDK 的一些参数进行配置。
+在 [UpConfig](https://github.com/upyun/android-sdk/blob/master/upyun-android-sdk/src/main/java/com/upyun/library/common/UpConfig.java) 中可以对 SDK 的一些参数进行配置。
 
 * `BLOCK_SIZE` 单个分块大小
 * `FILE_BOUND` 自动判断使用分块或者表单上传的文件大小界限
@@ -70,7 +70,7 @@ SignatureListener signatureListener=new SignatureListener() {
 将参数 `raw` 传给后台服务器和表单密匙连接后做一次 md5 运算返回结果。
 
 参数键值对中 `Params.BUCKET`（上传空间名）和 `Params.SAVE_KEY` 或 `Params.PATH`（保存路径，任选一个）为必选参数，
-其他可选参数见 [Params](https://github.com/upyun/android-sdk/blob/master/library/src/main/java/com/upyun/library/common/Params.java) 或者[官网 API 文档](http://docs.upyun.com/api/form_api/)。
+其他可选参数见 [Params](https://github.com/upyun/android-sdk/blob/master/upyun-android-sdk/src/main/java/com/upyun/library/common/Params.java) 或者[官网 API 文档](http://docs.upyun.com/api/form_api/)。
 
 ### 表单上传
 
