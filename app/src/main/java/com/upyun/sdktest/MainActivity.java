@@ -21,8 +21,8 @@ import java.util.Map;
 public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
-    public static String KEY = "GqSu2v26RI+Xu3yLdsWfynTS/LM=";
-    public static String SPACE = "formtest";
+    public static String KEY = "****************";
+    public static String SPACE = "*******";
     private String localFilePath = Environment.getExternalStorageDirectory()
             .getAbsolutePath() + File.separator + "test3.dmg";
     private ProgressBar uploadProgress;
