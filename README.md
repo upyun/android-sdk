@@ -66,7 +66,6 @@ SignatureListener signatureListener=new SignatureListener() {
         return UpYunUtils.md5(raw+KEY);
     }
 };
-        
 ```
 将参数 `raw` 传给后台服务器和表单密匙连接后做一次 md5 运算返回结果。
 
