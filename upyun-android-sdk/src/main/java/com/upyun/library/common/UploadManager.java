@@ -6,7 +6,6 @@ import com.upyun.library.listener.UpProgressListener;
 import com.upyun.library.utils.AsyncRun;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -37,11 +36,11 @@ public class UploadManager {
         return instance;
     }
 
-    public void upload(final File file, final Map<String, Object> params, String apiKey, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
+    protected void upload(final File file, final Map<String, Object> params, String apiKey, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
         this.upload(file, params, apiKey, null, completeListener, progressListener);
     }
 
-    public void upload(final File file, final Map<String, Object> params, SignatureListener signatureListener, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
+    protected void upload(final File file, final Map<String, Object> params, SignatureListener signatureListener, final UpCompleteListener completeListener, final UpProgressListener progressListener) {
         this.upload(file, params, null, signatureListener, completeListener, progressListener);
     }
 
@@ -72,12 +71,15 @@ public class UploadManager {
             completeListener.onComplete(false, "APIkey和signatureListener不可同时为null");
             return;
         } else if (completeListener == null) {
-            completeListener.onComplete(false, "completeListener不可为空");
-            return;
+            throw new RuntimeException("completeListener 不可为null");
+        }
+
+        if (params.get(Params.BUCKET) == null) {
+            params.put(Params.BUCKET, UpConfig.BUCKET);
         }
 
         if (params.get(Params.EXPIRATION) == null) {
-            params.put(Params.EXPIRATION, Calendar.getInstance().getTimeInMillis() + UpConfig.EXPIRATION);
+            params.put(Params.EXPIRATION, System.currentTimeMillis() + UpConfig.EXPIRATION);
         }
 
         UpProgressListener uiProgressListener = new UpProgressListener() {

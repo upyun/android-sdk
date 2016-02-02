@@ -2,7 +2,6 @@ package com.upyun.sdktest;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -14,23 +13,33 @@ import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
 import com.upyun.library.utils.UpYunUtils;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends Activity {
 
-    private static final String TAG = "MainActivity";
-    public static String KEY = "****************";
-    public static String SPACE = "*******";
-    private String localFilePath = Environment.getExternalStorageDirectory()
-            .getAbsolutePath() + File.separator + "test3.dmg";
+    private static final String TAG = "********";
+    public static String KEY = "**********";
+    public static String SPACE = "formtest";
     private ProgressBar uploadProgress;
     private TextView textView;
     String savePath = "/uploads/{year}{mon}{day}/{random32}{.suffix}";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        File temp = null;
+        try {
+            temp = getTempFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         setContentView(R.layout.activity_main);
         uploadProgress = (ProgressBar) findViewById(R.id.progressBar);
         textView = (TextView) findViewById(R.id.tv_process);
@@ -61,19 +70,25 @@ public class MainActivity extends Activity {
             }
         };
 
-        SignatureListener signatureListener=new SignatureListener() {
+        SignatureListener signatureListener = new SignatureListener() {
             @Override
             public String getSignature(String raw) {
-                return UpYunUtils.md5(raw+KEY);
+                return UpYunUtils.md5(raw + KEY);
             }
         };
 
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-        UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-        UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().formUpload(temp, paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().formUpload(temp, paramsMap, signatureListener, completeListener, progressListener);
+        UploadManager.getInstance().blockUpload(temp, paramsMap, KEY, completeListener, progressListener);
+        UploadManager.getInstance().blockUpload(temp, paramsMap, signatureListener, completeListener, progressListener);
+    }
 
+    private File getTempFile() throws IOException {
+        File temp = File.createTempFile("upyun", "test");
+        temp.deleteOnExit();
+        OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(temp));
+        outputStream.write("just for test !".getBytes());
+        outputStream.close();
+        return temp;
     }
 }

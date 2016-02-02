@@ -38,14 +38,14 @@ compile 'com.upyun:upyun-android-sdk:1.0.0'
 > 详细示例请见 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
 
 
-### 文件上传
+### 表单上传
 
 ```
-UploadManager.getInstance().upload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-UploadManager.getInstance().upload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
 ```
 
-使用该方法根据配置文件自动判断文件通过分块还是表单上传。
+使用该方法，直接选择通过表单上传方式上传文件。
 
 参数说明：
 
@@ -72,15 +72,6 @@ SignatureListener signatureListener=new SignatureListener() {
 参数键值对中 `Params.BUCKET`（上传空间名）和 `Params.SAVE_KEY` 或 `Params.PATH`（保存路径，任选一个）为必选参数，
 其他可选参数见 [Params](https://github.com/upyun/android-sdk/blob/master/upyun-android-sdk/src/main/java/com/upyun/library/common/Params.java) 或者[官网 API 文档](http://docs.upyun.com/api/form_api/)。
 
-### 表单上传
-
-```
-UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-```
-
-使用该方法，直接选择通过表单上传方式上传文件。
-参数说明：同上。
 ### 分块上传
 
 ```

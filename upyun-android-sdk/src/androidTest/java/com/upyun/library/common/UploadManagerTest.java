@@ -25,14 +25,14 @@ public class UploadManagerTest extends TestCase {
 
     public void testUploadManager() throws Exception {
 
-        final CountDownLatch latch = new CountDownLatch(6);
+        final CountDownLatch latch = new CountDownLatch(12);
         final Map<String, Object> paramsMap = new HashMap<>();
         paramsMap.put(Params.BUCKET, SPACE);
         paramsMap.put(Params.SAVE_KEY, savePath);
         paramsMap.put(Params.EXPIRATION, Calendar.getInstance().getTimeInMillis() + UpConfig.EXPIRATION);
         paramsMap.put(Params.RETURN_URL, "httpbin.org/post");
 
-        File temp = File.createTempFile("ymm", "test");
+        File temp = File.createTempFile("upyun", "test");
         temp.deleteOnExit();
         OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(temp));
         outputStream.write("just for test !".getBytes());
@@ -57,6 +57,16 @@ public class UploadManagerTest extends TestCase {
             }
         };
 
+        UpCompleteListener faileCompleteListener = new UpCompleteListener() {
+            @Override
+            public void onComplete(boolean isSuccess, String result) {
+                assertNotNull(isSuccess);
+                assertNotNull(result);
+                assertFalse(isSuccess);
+                latch.countDown();
+            }
+        };
+
         SignatureListener signatureListener = new SignatureListener() {
             @Override
             public String getSignature(String raw) {
@@ -70,6 +80,15 @@ public class UploadManagerTest extends TestCase {
         manager.formUpload(temp, paramsMap, signatureListener, completeListener, progressListener);
         manager.blockUpload(temp, paramsMap, KEY, completeListener, progressListener);
         manager.blockUpload(temp, paramsMap, signatureListener, completeListener, progressListener);
+
+        manager.upload(temp, paramsMap, KEY + 1, faileCompleteListener, progressListener);
+        manager.formUpload(temp, paramsMap, KEY + 1, faileCompleteListener, progressListener);
+        manager.blockUpload(temp, paramsMap, KEY + 1, faileCompleteListener, progressListener);
+
+        paramsMap.put(Params.BUCKET, SPACE + 1);
+        manager.upload(temp, paramsMap, signatureListener, faileCompleteListener, progressListener);
+        manager.formUpload(temp, paramsMap, signatureListener, faileCompleteListener, progressListener);
+        manager.blockUpload(temp, paramsMap, signatureListener, faileCompleteListener, progressListener);
         latch.await();
     }
 }

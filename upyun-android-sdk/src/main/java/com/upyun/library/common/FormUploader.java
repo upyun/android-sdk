@@ -1,6 +1,6 @@
 package com.upyun.library.common;
 
-import com.upyun.library.exception.UpYunException;
+import com.upyun.library.exception.RespException;
 import com.upyun.library.listener.SignatureListener;
 import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
@@ -37,6 +37,7 @@ public class FormUploader implements Runnable {
         this.progressListener = uiProgressListener;
     }
 
+
     @Override
     public void run() {
         String save_path = (String) params.get(Params.SAVE_KEY);
@@ -56,8 +57,8 @@ public class FormUploader implements Runnable {
         try {
             String response = client.fromUpLoad(file, url, policy, signature, progressListener);
             completeListener.onComplete(true, response);
-        } catch (IOException | UpYunException e) {
-            if (++retryTime > UpConfig.RETRY_TIME) {
+        } catch (IOException | RespException e) {
+            if (++retryTime > UpConfig.RETRY_TIME || (e instanceof RespException && ((RespException) e).code() / 100 != 5)) {
                 completeListener.onComplete(false, e.toString());
             } else {
                 this.run();

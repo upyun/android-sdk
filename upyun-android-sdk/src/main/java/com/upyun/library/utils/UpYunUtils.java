@@ -111,12 +111,6 @@ public class UpYunUtils {
      * @return
      */
     public static int getBlockNum(File file, int blockSize) {
-        int blockNum;
-        int size = (int) file.length() % blockSize;
-        blockNum = (int) file.length() / blockSize;
-        if (size != 0) {
-            blockNum++;
-        }
-        return blockNum;
+        return (int) Math.ceil(file.length() / (double) blockSize);
     }
 }

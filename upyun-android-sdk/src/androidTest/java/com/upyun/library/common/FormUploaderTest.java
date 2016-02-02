@@ -33,7 +33,7 @@ public class FormUploaderTest extends TestCase {
         paramsMap.put(Params.EXPIRATION, Calendar.getInstance().getTimeInMillis() + UpConfig.EXPIRATION);
         paramsMap.put(Params.RETURN_URL, "httpbin.org/post");
 
-        File temp = File.createTempFile("ymm", "test");
+        File temp = File.createTempFile("upyun", "test");
         temp.deleteOnExit();
         OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(temp));
         outputStream.write("just for test !".getBytes());

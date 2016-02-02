@@ -2,6 +2,7 @@ package com.upyun.library.common;
 
 import android.util.Log;
 
+import com.upyun.library.exception.RespException;
 import com.upyun.library.exception.UpYunException;
 import com.upyun.library.listener.SignatureListener;
 import com.upyun.library.listener.UpCompleteListener;
@@ -123,8 +124,8 @@ public class BlockUploader implements Runnable {
                 } else {
                     index++;
                 }
-            } catch (IOException | UpYunException e) {
-                if (++retryTime > UpConfig.RETRY_TIME) {
+            } catch (IOException | RespException e) {
+                if (++retryTime > UpConfig.RETRY_TIME || (e instanceof RespException && ((RespException) e).code() / 100 != 5)) {
                     completeListener.onComplete(false, e.toString());
                     break;
                 }
@@ -149,8 +150,8 @@ public class BlockUploader implements Runnable {
             String response = client.post(url, paramMap);
             progressListener.onRequestProgress(blockIndex.length, blockIndex.length);
             completeListener.onComplete(true, response);
-        } catch (IOException | UpYunException e) {
-            if (++retryTime > UpConfig.RETRY_TIME) {
+        } catch (IOException | RespException e) {
+            if (++retryTime > UpConfig.RETRY_TIME || (e instanceof RespException && ((RespException) e).code() / 100 != 5)) {
                 completeListener.onComplete(false, e.toString());
             } else {
                 megreRequest();
@@ -176,8 +177,8 @@ public class BlockUploader implements Runnable {
                 // 上传分块
                 blockUpload(0);
             }
-        } catch (IOException | UpYunException e) {
-            if (++retryTime > UpConfig.RETRY_TIME) {
+        } catch (IOException | RespException e) {
+            if (++retryTime > UpConfig.RETRY_TIME || (e instanceof RespException && ((RespException) e).code() / 100 != 5)) {
                 completeListener.onComplete(false, e.toString());
             } else {
                 initRequest();
