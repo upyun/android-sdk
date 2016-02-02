@@ -1,7 +1,7 @@
 # UPYUN Android SDK
 
 [![Build Status](https://travis-ci.org/upyun/android-sdk.svg?branch=master)](https://travis-ci.org/upyun/android-sdk)
-[ ![Download](https://api.bintray.com/packages/yemingm/maven/upyun-android-sdk/images/download.svg) ](https://bintray.com/yemingm/maven/upyun-android-sdk/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/upyun/maven/upyun-android-sdk/images/download.svg) ](https://bintray.com/upyun/maven/upyun-android-sdk/_latestVersion)
 
 UPYUN Android SDK, 集成：
 - [UPYUN HTTP FORM 接口](http://docs.upyun.com/api/form_api/)
