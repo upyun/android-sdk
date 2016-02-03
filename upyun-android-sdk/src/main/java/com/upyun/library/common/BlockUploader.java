@@ -247,6 +247,7 @@ public class BlockUploader implements Runnable {
     }
 
     private String getParamsString(Map<String, Object> params) {
+
         Object[] keys = params.keySet().toArray();
         Arrays.sort(keys);
         StringBuffer tmp = new StringBuffer("");
