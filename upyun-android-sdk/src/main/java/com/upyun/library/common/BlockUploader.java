@@ -118,11 +118,9 @@ public class BlockUploader implements Runnable {
                     progressListener.onRequestProgress(index, blockIndex.length);
                 }
 
-                if (index == (blockIndex.length - 1)) {
+                if (index++ == (blockIndex.length - 1)) {
                     megreRequest();
                     break;
-                } else {
-                    index++;
                 }
             } catch (IOException | RespException e) {
                 if (++retryTime > UpConfig.RETRY_TIME || (e instanceof RespException && ((RespException) e).code() / 100 != 5)) {
@@ -206,12 +204,7 @@ public class BlockUploader implements Runnable {
         byte[] block = new byte[UpConfig.BLOCK_SIZE];
         int readedSize = 0;
         try {
-            int offset;
-            if (blockIndex[index] == 0) {
-                offset = 0;
-            } else {
-                offset = (blockIndex[index]) * UpConfig.BLOCK_SIZE;
-            }
+            int offset = (blockIndex[index]) * UpConfig.BLOCK_SIZE;
             randomAccessFile.seek(offset);
             readedSize = randomAccessFile.read(block, 0, UpConfig.BLOCK_SIZE);
         } catch (IOException e) {
