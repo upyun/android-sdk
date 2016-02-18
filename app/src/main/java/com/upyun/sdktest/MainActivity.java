@@ -23,9 +23,9 @@ import java.util.Map;
 
 public class MainActivity extends Activity {
 
-    private static final String TAG = "********";
+    private static final String TAG = "MainActivity";
     public static String KEY = "**********";
-    public static String SPACE = "formtest";
+    public static String SPACE = "********";
     private ProgressBar uploadProgress;
     private TextView textView;
     String savePath = "/uploads/{year}{mon}{day}/{random32}{.suffix}";
