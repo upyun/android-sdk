@@ -15,7 +15,7 @@ UPYUN Android SDK, 集成：
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
 ```
-compile 'com.upyun:upyun-android-sdk:1.0.0'
+compile 'com.upyun:upyun-android-sdk:1.0.1'
 ```
 ## 参数设置
 
