@@ -79,7 +79,7 @@ public class UploadManager {
         }
 
         if (params.get(Params.EXPIRATION) == null) {
-            params.put(Params.EXPIRATION, System.currentTimeMillis() + UpConfig.EXPIRATION);
+            params.put(Params.EXPIRATION, System.currentTimeMillis()/1000 + UpConfig.EXPIRATION);
         }
 
         UpProgressListener uiProgressListener = new UpProgressListener() {
