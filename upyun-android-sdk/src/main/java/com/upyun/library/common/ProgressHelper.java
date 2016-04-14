@@ -1,8 +1,9 @@
 package com.upyun.library.common;
 
 
-import com.squareup.okhttp.RequestBody;
 import com.upyun.library.listener.UpProgressListener;
+
+import okhttp3.RequestBody;
 
 
 public class ProgressHelper {

@@ -1,5 +1,7 @@
 package com.upyun.library.common;
 
+import android.util.Log;
+
 import com.upyun.library.listener.SignatureListener;
 import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
@@ -49,6 +51,7 @@ public class BlockUploaderTest extends TestCase {
         UpCompleteListener completeListener = new UpCompleteListener() {
             @Override
             public void onComplete(boolean isSuccess, String result) {
+                Log.e("haha", isSuccess + result);
                 assertNotNull(isSuccess);
                 assertNotNull(result);
                 assertTrue(isSuccess);
