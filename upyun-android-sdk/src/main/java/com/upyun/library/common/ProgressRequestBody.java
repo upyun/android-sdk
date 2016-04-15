@@ -1,12 +1,12 @@
 package com.upyun.library.common;
 
 
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.RequestBody;
 import com.upyun.library.listener.UpProgressListener;
 
 import java.io.IOException;
 
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
 import okio.Buffer;
 import okio.BufferedSink;
 import okio.ForwardingSink;
