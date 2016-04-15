@@ -6,6 +6,7 @@ import com.upyun.library.listener.UpProgressListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.FormBody;
 import okhttp3.MultipartBody;
@@ -20,7 +21,12 @@ public class UploadClient {
     private OkHttpClient client;
 
     public UploadClient() {
-        client = new OkHttpClient();
+        client = new OkHttpClient.Builder()
+                .connectTimeout(UpConfig.CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(UpConfig.READ_TIMEOUT, TimeUnit.SECONDS)
+                .writeTimeout(UpConfig.WRITE_TIMEOUT, TimeUnit.SECONDS)
+                .followRedirects(true)
+                .build();
     }
 
     public String fromUpLoad(File file, String url, String policy, String signature, UpProgressListener listener) throws IOException, RespException {
