@@ -17,9 +17,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class BlockUploader implements Runnable {
@@ -247,13 +249,13 @@ public class BlockUploader implements Runnable {
     }
 
     private String getParamsString(Map<String, Object> params) {
+        List<String> keys = new ArrayList<>(params.keySet());
+        Collections.sort(keys);
 
-        Object[] keys = params.keySet().toArray();
-        Arrays.sort(keys);
-        StringBuffer tmp = new StringBuffer("");
-        for (Object key : keys) {
-            tmp.append(key).append(params.get(key));
+        StringBuilder builder = new StringBuilder("");
+        for (String key : keys) {
+            builder.append(key).append(params.get(key));
         }
-        return tmp.toString();
+        return builder.toString();
     }
 }
