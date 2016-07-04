@@ -77,7 +77,7 @@ public class BlockUploader implements Runnable {
             } else if (signatureListener != null) {
                 this.userSignature = signatureListener.getSignature(getParamsString(params));
             } else {
-                throw new RuntimeException("apikey 和 signatureListener 不可都为null");
+                throw new RuntimeException("apiKey 和 signatureListener 不可都为 null");
             }
 
             this.randomAccessFile = new RandomAccessFile(this.file, "r");
@@ -121,7 +121,7 @@ public class BlockUploader implements Runnable {
                 }
 
                 if (index++ == (blockIndex.length - 1)) {
-                    megreRequest();
+                    mergeRequest();
                     break;
                 }
             } catch (IOException | RespException e) {
@@ -135,7 +135,7 @@ public class BlockUploader implements Runnable {
         }
     }
 
-    private void megreRequest() {
+    private void mergeRequest() {
         HashMap<String, Object> paramsMapFinish = new HashMap<>();
         paramsMapFinish.put(Params.EXPIRATION, expiration);
         paramsMapFinish.put(Params.SAVE_TOKEN, saveToken);
@@ -154,7 +154,7 @@ public class BlockUploader implements Runnable {
             if (++retryTime > UpConfig.RETRY_TIME || (e instanceof RespException && ((RespException) e).code() / 100 != 5)) {
                 completeListener.onComplete(false, e.toString());
             } else {
-                megreRequest();
+                mergeRequest();
             }
         }
     }
@@ -172,7 +172,7 @@ public class BlockUploader implements Runnable {
             blockIndex = getBlockIndex(array);
 
             if (blockIndex.length == 0) {
-                megreRequest();
+                mergeRequest();
             } else {
                 // 上传分块
                 blockUpload(0);
