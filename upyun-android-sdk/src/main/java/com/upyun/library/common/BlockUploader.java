@@ -17,9 +17,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class BlockUploader implements Runnable {
@@ -75,7 +77,7 @@ public class BlockUploader implements Runnable {
             } else if (signatureListener != null) {
                 this.userSignature = signatureListener.getSignature(getParamsString(params));
             } else {
-                throw new RuntimeException("apikey 和 signatureListener 不可都为null");
+                throw new RuntimeException("apiKey 和 signatureListener 不可都为 null");
             }
 
             this.randomAccessFile = new RandomAccessFile(this.file, "r");
@@ -119,7 +121,7 @@ public class BlockUploader implements Runnable {
                 }
 
                 if (index++ == (blockIndex.length - 1)) {
-                    megreRequest();
+                    mergeRequest();
                     break;
                 }
             } catch (IOException | RespException e) {
@@ -133,7 +135,7 @@ public class BlockUploader implements Runnable {
         }
     }
 
-    private void megreRequest() {
+    private void mergeRequest() {
         HashMap<String, Object> paramsMapFinish = new HashMap<>();
         paramsMapFinish.put(Params.EXPIRATION, expiration);
         paramsMapFinish.put(Params.SAVE_TOKEN, saveToken);
@@ -152,7 +154,7 @@ public class BlockUploader implements Runnable {
             if (++retryTime > UpConfig.RETRY_TIME || (e instanceof RespException && ((RespException) e).code() / 100 != 5)) {
                 completeListener.onComplete(false, e.toString());
             } else {
-                megreRequest();
+                mergeRequest();
             }
         }
     }
@@ -170,7 +172,7 @@ public class BlockUploader implements Runnable {
             blockIndex = getBlockIndex(array);
 
             if (blockIndex.length == 0) {
-                megreRequest();
+                mergeRequest();
             } else {
                 // 上传分块
                 blockUpload(0);
@@ -247,13 +249,13 @@ public class BlockUploader implements Runnable {
     }
 
     private String getParamsString(Map<String, Object> params) {
+        List<String> keys = new ArrayList<>(params.keySet());
+        Collections.sort(keys);
 
-        Object[] keys = params.keySet().toArray();
-        Arrays.sort(keys);
-        StringBuffer tmp = new StringBuffer("");
-        for (Object key : keys) {
-            tmp.append(key).append(params.get(key));
+        StringBuilder builder = new StringBuilder("");
+        for (String key : keys) {
+            builder.append(key).append(params.get(key));
         }
-        return tmp.toString();
+        return builder.toString();
     }
 }
