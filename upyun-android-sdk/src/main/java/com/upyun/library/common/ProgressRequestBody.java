@@ -32,12 +32,17 @@ public class ProgressRequestBody extends RequestBody {
     }
 
     public void writeTo(BufferedSink sink) throws IOException {
-        if (this.bufferedSink == null) {
-            this.bufferedSink = Okio.buffer(this.sink(sink));
-        }
 
-        this.requestBody.writeTo(this.bufferedSink);
-        this.bufferedSink.flush();
+        try {
+            if (this.bufferedSink == null) {
+                this.bufferedSink = Okio.buffer(this.sink(sink));
+            }
+
+            this.requestBody.writeTo(this.bufferedSink);
+            this.bufferedSink.flush();
+        } catch (IllegalStateException e) {
+            //// TODO: 2016/12/19 unknowException
+        }
     }
 
     private Sink sink(final Sink sink) {
