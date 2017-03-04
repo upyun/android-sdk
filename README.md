@@ -6,7 +6,9 @@
 UPYUN Android SDK, 集成：
 - [UPYUN HTTP FORM 接口](http://docs.upyun.com/api/form_api/)
 - [UPYUN 分块上传接口](http://docs.upyun.com/api/multipart_upload/)
+- [UPYUN 断点续传接口](http://docs.upyun.com/api/rest_api/#_7)
 
+**注：1.XX SDK 服务器验证策略已过期，推荐导入源码使用最新 2.0 上传方式**
 
 ## 使用说明：
 
@@ -38,7 +40,7 @@ compile 'com.upyun:upyun-android-sdk:1.0.3'
 > 详细示例请见 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
 
 
-### 表单上传
+### 表单上传（旧）
 
 ```
 UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
@@ -72,7 +74,7 @@ SignatureListener signatureListener=new SignatureListener() {
 参数键值对中 `Params.BUCKET`（上传空间名）和 `Params.SAVE_KEY` 或 `Params.PATH`（保存路径，任选一个）为必选参数，
 其他可选参数见 [Params](https://github.com/upyun/android-sdk/blob/master/upyun-android-sdk/src/main/java/com/upyun/library/common/Params.java) 或者[官网 API 文档](http://docs.upyun.com/api/form_api/)。
 
-### 分块上传
+### 分块上传（旧）
 
 ```
 UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
@@ -81,6 +83,54 @@ UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, sign
 
 使用该方法，直接选择通过分块上传方式上传文件。
 参数说明：同上。
+
+### 表单上传 (新)
+```
+        UploadEngine.getInstance().formUpload(temp, paramsMap, OPERATER, UpYunUtils.md5(PASSWORD), completeListener, progressListener);
+        UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener); 
+
+```
+
+参数说明：
+
+* `temp`  上传文件
+* `paramsMap `  参数键值对
+* `OPERATER ` 操作员
+* `PASSWORD `  操作员密码（MD5后传入）
+* `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
+* `progressListener`  进度条回调(回调到 UI 线程，可为 NULL)
+
+### 断点续传
+
+2.0 提供一种新的上传方式可以用来代替分块双穿，使用方式如下：
+
+```
+		final ResumeUploader uploader = new ResumeUploader(SPACE,OPERATER,UpYunUtils.md5(PASSWORD));
+
+        //设置 MD5 校验
+        uploader.setCheckMD5(true);
+
+        //设置进度监听
+        uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
+            @Override
+            public void onProgress(int index, int total) {
+            }
+        });
+
+        new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    uploader.upload(file, "/test1.txt", params);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (UpYunException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.run();
+    }
+```
 
 ## 测试
 

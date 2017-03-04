@@ -29,6 +29,33 @@ public class UploadClient {
                 .build();
     }
 
+    public String fromUpLoad2(File file, String url, String policy, String operator, String signature, UpProgressListener listener) throws IOException, RespException {
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", file.getName(), RequestBody.create(null, file))
+                .addFormDataPart("policy", policy)
+                .addFormDataPart("authorization", "UPYUN " + operator + ":" + signature)
+                .build();
+
+        if (listener != null) {
+            requestBody = ProgressHelper.addProgressListener(requestBody, listener);
+        }
+        Request request = new Request.Builder()
+                .addHeader("x-upyun-api-version", "2")
+                .url(url)
+                .post(requestBody)
+                .build();
+
+        Response response = client.newCall(request).execute();
+        if (!response.isSuccessful()) {
+            throw new RespException(response.code(), response.body().string());
+        } else {
+            return response.body().string();
+        }
+    }
+
+
     public String fromUpLoad(File file, String url, String policy, String signature, UpProgressListener listener) throws IOException, RespException {
 
         RequestBody requestBody = new MultipartBody.Builder()
@@ -42,7 +69,7 @@ public class UploadClient {
             requestBody = ProgressHelper.addProgressListener(requestBody, listener);
         }
         Request request = new Request.Builder()
-                .addHeader("x-upyun-api-version ", "2")
+                .addHeader("x-upyun-api-version", "2")
                 .url(url)
                 .post(requestBody)
                 .build();
@@ -61,7 +88,7 @@ public class UploadClient {
             builder.add(entry.getKey(), entry.getValue());
         }
         Request request = new Request.Builder()
-                .addHeader("x-upyun-api-version ", "2")
+                .addHeader("x-upyun-api-version", "2")
                 .url(url)
                 .post(builder.build())
                 .build();
@@ -84,7 +111,7 @@ public class UploadClient {
         }
         builder.addFormDataPart("file", postData.fileName, RequestBody.create(null, postData.data));
         Request request = new Request.Builder()
-                .addHeader("x-upyun-api-version ", "2")
+                .addHeader("x-upyun-api-version", "2")
                 .url(url)
                 .post(builder.build())
                 .build();
