@@ -70,7 +70,7 @@ public class Base64Coder {
             buf.append(lineSeparator);
             ip += l;
         }
-        return buf.toString();
+        return buf.toString().trim();
     }
 
     /**

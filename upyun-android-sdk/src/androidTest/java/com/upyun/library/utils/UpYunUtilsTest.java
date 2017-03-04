@@ -7,6 +7,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -84,5 +85,13 @@ public class UpYunUtilsTest extends TestCase {
         outputStream.close();
         int result2 = UpYunUtils.getBlockNum(temp, 2);
         Assert.assertEquals(15, result2);
+    }
+
+    public void testSig() throws Exception {
+        String raw1 = "482c811da5d5b4bc6d497ffa98491e38";
+        String raw2 = "POST&/upyun-temp&Wed, 09 Nov 2016 14:26:58 GMT&eyJidWNrZXQiOiAidXB5dW4tdGVtcCIsICJzYXZlLWtleSI6ICIvZGVtby5qcGciLCAiZXhwaXJhdGlvbiI6ICIxNDc4Njc0NjE4IiwgImRhdGUiOiAiV2VkLCA5IE5vdiAyMDE2IDE0OjI2OjU4IEdNVCIsICJjb250ZW50LW1kNSI6ICI3YWM2NmMwZjE0OGRlOTUxOWI4YmQyNjQzMTJjNGQ2NCJ9&7ac66c0f148de9519b8bd264312c4d64";
+        byte[] b = UpYunUtils.calculateRFC2104HMACRaw(raw1, raw2);
+        String result = Base64Coder.encodeLines(b);
+        Assert.assertEquals("DTGOeaCa1yk1JWG4G3DH+u5sI5M=", result);
     }
 }

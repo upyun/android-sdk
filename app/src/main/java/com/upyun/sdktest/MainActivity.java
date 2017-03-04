@@ -7,8 +7,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.upyun.library.common.Params;
-import com.upyun.library.common.UploadManager;
-import com.upyun.library.listener.SignatureListener;
+import com.upyun.library.common.ResumeUploader;
+import com.upyun.library.common.UploadEngine;
+import com.upyun.library.exception.UpYunException;
 import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
 import com.upyun.library.utils.UpYunUtils;
@@ -24,11 +25,22 @@ import java.util.Map;
 public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
-    public static String KEY = "**********";
-    public static String SPACE = "********";
+    //空间名
+    public static String SPACE = "****";
+    //操作员
+    public static String OPERATER = "****";
+    //密码
+    public static String PASSWORD = "****";
+
     private ProgressBar uploadProgress;
+
     private TextView textView;
-    String savePath = "/uploads/{year}{mon}{day}/{random32}{.suffix}";
+
+    private String savePath = "/uploads/{year}{mon}{day}/{random32}{.suffix}";
+
+    private String policy = "eyJyZXR1cm4tdXJsIjoiaHR0cGJpbi5vcmdcL3Bvc3QiLCJidWNrZXQiOiJidWNrZXQxIiwiY29udGVudC1tZDUiOiI4Nzc0NDE4OGMyZDgyYjcyMDNlOGI3NDQ3MzU5MTE2OCIsImRhdGUiOiJGcmksIDAzIE1hciAyMDE3IDA5OjAxOjAzIiwiZXhwaXJhdGlvbiI6MTQ4ODUzMzQ2Mywic2F2ZS1rZXkiOiJcL3VwbG9hZHNcL3t5ZWFyfXttb259e2RheX1cL3tyYW5kb20zMn17LnN1ZmZpeH0ifQ==";
+
+    private String signature = "CuThEAj+xqwwtPotif1l2dT6P8w=";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +60,16 @@ public class MainActivity extends Activity {
         paramsMap.put(Params.BUCKET, SPACE);
         //保存路径，任选其中一个
         paramsMap.put(Params.SAVE_KEY, savePath);
+
+
+//        Locale locale = Locale.US;
+//        Date d = new Date();
+//        DateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", locale);
+//        format.setTimeZone(TimeZone.getTimeZone("GMT"));
+//        System.out.println(format.format(d));
+//        paramsMap.put(Params.DATE, format.format(d));
+
+        paramsMap.put(Params.CONTENT_MD5, UpYunUtils.md5Hex(temp));
 //        paramsMap.put(Params.PATH, savePath);
         //可选参数（详情见api文档介绍）
         paramsMap.put(Params.RETURN_URL, "httpbin.org/post");
@@ -70,17 +92,8 @@ public class MainActivity extends Activity {
             }
         };
 
-        SignatureListener signatureListener = new SignatureListener() {
-            @Override
-            public String getSignature(String raw) {
-                return UpYunUtils.md5(raw + KEY);
-            }
-        };
-
-        UploadManager.getInstance().formUpload(temp, paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().formUpload(temp, paramsMap, signatureListener, completeListener, progressListener);
-        UploadManager.getInstance().blockUpload(temp, paramsMap, KEY, completeListener, progressListener);
-        UploadManager.getInstance().blockUpload(temp, paramsMap, signatureListener, completeListener, progressListener);
+        UploadEngine.getInstance().formUpload(temp, paramsMap, OPERATER, UpYunUtils.md5(PASSWORD), completeListener, progressListener);
+        UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener);
     }
 
     private File getTempFile() throws IOException {
@@ -90,5 +103,35 @@ public class MainActivity extends Activity {
         outputStream.write("just for test !".getBytes());
         outputStream.close();
         return temp;
+    }
+
+
+    //断点续传使用 DEMO
+    public void resumeUpdate(final File file, final Map<String, String> params) {
+
+        final ResumeUploader uploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
+
+        //设置 MD5 校验
+        uploader.setCheckMD5(true);
+
+        //设置进度监听
+        uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
+            @Override
+            public void onProgress(int index, int total) {
+            }
+        });
+
+        new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    uploader.upload(file, "/test1.txt", params);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (UpYunException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.run();
     }
 }
