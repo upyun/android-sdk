@@ -108,7 +108,7 @@ public class ResumeUploader {
      *
      * @param bucketName 空间名称
      * @param userName   操作员名称
-     * @param password   密码，不需要MD5加密
+     * @param password   密码，需要MD5加密
      * @return ResumeUploader object
      */
     public ResumeUploader(String bucketName, String userName, String password) {
@@ -330,7 +330,7 @@ public class ResumeUploader {
                 .put(requestBody);
 
         if (md5 != null) {
-            builder.header(CONTENT_MD5, UpYunUtils.md5(mFile, BLOCK_SIZE));
+            builder.header(CONTENT_MD5, md5);
         }
 
         callRequest(builder.build());
