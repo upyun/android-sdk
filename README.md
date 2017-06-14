@@ -8,7 +8,7 @@ UPYUN Android SDK, 集成：
 - [UPYUN 分块上传接口](http://docs.upyun.com/api/multipart_upload/)
 - [UPYUN 断点续传接口](http://docs.upyun.com/api/rest_api/#_7)
 
-**注：1.XX SDK 服务器验证策略已过期，推荐导入源码使用最新 2.0 上传方式**
+**注：1.XX SDK 服务器验证策略已过期，推荐使用最新 2.0 上传方式**
 
 ## 使用说明：
 
@@ -86,8 +86,10 @@ UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, sign
 
 ### 表单上传 (新)
 ```
-        UploadEngine.getInstance().formUpload(temp, paramsMap, OPERATER, UpYunUtils.md5(PASSWORD), completeListener, progressListener);
-        UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener); 
+//表单上传（本地签名方式）
+UploadEngine.getInstance().formUpload(temp, paramsMap, OPERATER, UpYunUtils.md5(PASSWORD), completeListener, progressListener);
+//表单上传（服务器签名方式）
+UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener);
 
 ```
 
@@ -99,37 +101,30 @@ UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, sign
 * `PASSWORD `  操作员密码（MD5后传入）
 * `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
 * `progressListener`  进度条回调(回调到 UI 线程，可为 NULL)
+* `policy`  从服务器获取的 policy（生成规则见[官网文档](http://docs.upyun.com/api/authorization/)）
+* `progressListener`  从服务器获取的 signature（生成规则见[官网文档](http://docs.upyun.com/api/authorization/)）
 
 ### 断点续传
 
-2.0 提供一种新的上传方式可以用来代替分块双穿，使用方式如下：
+2.0 提供一种新的上传方式可以用来代替分块上传，使用方式如下：
 
 ```
-		final ResumeUploader uploader = new ResumeUploader(SPACE,OPERATER,UpYunUtils.md5(PASSWORD));
+//初始化断点续传
+ResumeUploader uploader = new ResumeUploader(SPACE,OPERATER,UpYunUtils.md5(PASSWORD));
 
-        //设置 MD5 校验
-        uploader.setCheckMD5(true);
+//设置 MD5 校验
+uploader.setCheckMD5(true);
 
-        //设置进度监听
-        uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
-            @Override
-            public void onProgress(int index, int total) {
-            }
-        });
+//设置进度监听
+uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
+      @Override
+      public void onProgress(int index, int total) {
+      }
+});
 
-        new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    uploader.upload(file, "/test1.txt", params);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (UpYunException e) {
-                    e.printStackTrace();
-                }
-            }
-        }.run();
-    }
+//开始断点续传（同步网络请求方法）
+uploader.upload(file, "/test1.txt", params);
+
 ```
 
 ## 测试

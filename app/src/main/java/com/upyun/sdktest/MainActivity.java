@@ -3,6 +3,7 @@ package com.upyun.sdktest;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -41,6 +42,11 @@ public class MainActivity extends Activity {
     private String policy = "eyJyZXR1cm4tdXJsIjoiaHR0cGJpbi5vcmdcL3Bvc3QiLCJidWNrZXQiOiJidWNrZXQxIiwiY29udGVudC1tZDUiOiI4Nzc0NDE4OGMyZDgyYjcyMDNlOGI3NDQ3MzU5MTE2OCIsImRhdGUiOiJGcmksIDAzIE1hciAyMDE3IDA5OjAxOjAzIiwiZXhwaXJhdGlvbiI6MTQ4ODUzMzQ2Mywic2F2ZS1rZXkiOiJcL3VwbG9hZHNcL3t5ZWFyfXttb259e2RheX1cL3tyYW5kb20zMn17LnN1ZmZpeH0ifQ==";
 
     private String signature = "CuThEAj+xqwwtPotif1l2dT6P8w=";
+
+    public static String KEY = "GqSu2v26RI+Xu3yLdsWfynTS/LM=";
+
+    private static final String SAMPLE_PIC_FILE = "/mnt/sdcard/test1";
+    private ResumeUploader uploader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,9 +98,32 @@ public class MainActivity extends Activity {
             }
         };
 
+        //表单上传（本地签名方式）
         UploadEngine.getInstance().formUpload(temp, paramsMap, OPERATER, UpYunUtils.md5(PASSWORD), completeListener, progressListener);
+        //表单上传（服务器签名方式）
         UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener);
+
+
+        //初始化断点续传
+        uploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
+
+        //设置 MD5 校验
+        uploader.setCheckMD5(true);
+
+        //设置进度监听
+        uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
+            @Override
+            public void onProgress(int index, int total) {
+                Log.e(TAG, index + ":" + total);
+            }
+        });
+
     }
+
+    public void resumeUpload(View view) {
+        resumeUpdate(new File(SAMPLE_PIC_FILE), null);
+    }
+
 
     private File getTempFile() throws IOException {
         File temp = File.createTempFile("upyun", "test");
@@ -109,22 +138,11 @@ public class MainActivity extends Activity {
     //断点续传使用 DEMO
     public void resumeUpdate(final File file, final Map<String, String> params) {
 
-        final ResumeUploader uploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
-
-        //设置 MD5 校验
-        uploader.setCheckMD5(true);
-
-        //设置进度监听
-        uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
-            @Override
-            public void onProgress(int index, int total) {
-            }
-        });
-
-        new Runnable() {
+        new Thread() {
             @Override
             public void run() {
                 try {
+                    //同步方法网络请求，Android 上自行管理线程
                     uploader.upload(file, "/test1.txt", params);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -132,6 +150,6 @@ public class MainActivity extends Activity {
                     e.printStackTrace();
                 }
             }
-        }.run();
+        }.start();
     }
 }
