@@ -308,14 +308,14 @@ public class ResumeUploader {
             return false;
         }
 
-        RequestBody requestBody = RequestBody.create(null, mFile);
+        RequestBody requestBody = RequestBody.create(null, "");
 
         String date = getGMTDate();
 
         String md5 = null;
 
         if (checkMD5) {
-            md5 = UpYunUtils.md5(mFile, BLOCK_SIZE);
+            md5 = UpYunUtils.md5("");
         }
 
         String sign = sign("PUT", date, uploadPath, bucketName, userName, password, md5);
