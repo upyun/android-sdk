@@ -1,5 +1,7 @@
 package com.upyun.library.common;
 
+import android.util.Log;
+
 import com.upyun.library.exception.UpYunException;
 import com.upyun.library.utils.Base64Coder;
 import com.upyun.library.utils.UpYunUtils;
@@ -349,8 +351,15 @@ public class ResumeUploader {
 
         Response response = currentCall.execute();
         if (!response.isSuccessful()) {
-            uuid = null;
-            throw new UpYunException(response.body().string());
+            int x_error_code = Integer.parseInt(response.header("X-Error-Code", "-1"));
+            Log.e("x_error_code", "::"+x_error_code);
+            if (x_error_code != 40011061 && x_error_code != 40011059) {
+                uuid = null;
+                throw new UpYunException(response.body().string());
+            } else {
+                nextPartIndex = Integer.parseInt(response.header(X_UPYUN_NEXT_PART_ID, "-2"));
+                return;
+            }
         }
 
         uuid = response.header(X_UPYUN_MULTI_UUID, "");
