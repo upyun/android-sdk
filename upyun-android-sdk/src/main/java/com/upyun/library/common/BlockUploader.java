@@ -73,7 +73,7 @@ public class BlockUploader implements Runnable {
             }
             this.userPolicy = UpYunUtils.getPolicy(params);
             if (apiKey != null) {
-                this.userSignature = UpYunUtils.getSignature(params, apiKey);
+                this.userSignature = UpYunUtils.getSignature(userPolicy, apiKey);
             } else if (signatureListener != null) {
                 this.userSignature = signatureListener.getSignature(getParamsString(params));
             } else {
