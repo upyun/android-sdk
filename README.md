@@ -17,7 +17,7 @@ UPYUN Android SDK, 集成：
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
 ```
-compile 'com.upyun:upyun-android-sdk:2.0.4'
+compile 'com.upyun:upyun-android-sdk:2.0.5'
 ```
 ## 参数设置
 
@@ -122,10 +122,18 @@ uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
       }
 });
 
-//开始断点续传（同步网络请求方法）
-uploader.upload(file, "/test1.txt", params);
+//开始断点续传
+uploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener) {
 
 ```
+
+参数说明：
+
+* `file `  上传文件
+* `uploadPath `  上传路径
+* `restParams ` rest api 上传预处理参数可为空 （详见[文档](http://docs.upyun.com/api/rest_api/#_17)）
+* `processParam `  异步音视频处理参数可为空 （详见[文档](http://docs.upyun.com/cloud/av/)）
+* `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
 
 ## 测试
 

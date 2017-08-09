@@ -2,6 +2,7 @@ package com.upyun.library.common;
 
 import com.upyun.library.exception.RespException;
 import com.upyun.library.listener.UpProgressListener;
+import com.upyun.library.utils.UpYunUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +44,7 @@ public class UploadClient {
         }
         Request request = new Request.Builder()
                 .addHeader("x-upyun-api-version", "2")
+                .header("User-Agent", UpYunUtils.VERSION)
                 .url(url)
                 .post(requestBody)
                 .build();
@@ -70,6 +72,7 @@ public class UploadClient {
         }
         Request request = new Request.Builder()
                 .addHeader("x-upyun-api-version", "2")
+                .header("User-Agent", UpYunUtils.VERSION)
                 .url(url)
                 .post(requestBody)
                 .build();
@@ -89,6 +92,7 @@ public class UploadClient {
         }
         Request request = new Request.Builder()
                 .addHeader("x-upyun-api-version", "2")
+                .header("User-Agent", UpYunUtils.VERSION)
                 .url(url)
                 .post(builder.build())
                 .build();
@@ -112,6 +116,7 @@ public class UploadClient {
         builder.addFormDataPart("file", postData.fileName, RequestBody.create(null, postData.data));
         Request request = new Request.Builder()
                 .addHeader("x-upyun-api-version", "2")
+                .header("User-Agent", UpYunUtils.VERSION)
                 .url(url)
                 .post(builder.build())
                 .build();
