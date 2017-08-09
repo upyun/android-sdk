@@ -3,6 +3,9 @@ package com.upyun.library.common;
 import android.util.Log;
 
 import com.upyun.library.exception.UpYunException;
+import com.upyun.library.listener.UpCompleteListener;
+import com.upyun.library.listener.UpProgressListener;
+import com.upyun.library.utils.AsyncRun;
 import com.upyun.library.utils.Base64Coder;
 import com.upyun.library.utils.UpYunUtils;
 
@@ -15,6 +18,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class ResumeUploader {
@@ -58,16 +63,15 @@ public class ResumeUploader {
 
     private String url;
 
-    private boolean interrupt;
     private Call currentCall;
 
-    private OnProgressListener onProgressListener;
+    private UpProgressListener onProgressListener;
 
     private OnInterruptListener onInterruptListener;
 
     private int totalBlock;
 
-    private boolean executed;
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     /**
      * 断点续传
@@ -79,7 +83,6 @@ public class ResumeUploader {
         if (uuid == null) {
             throw new UpYunException("uuid is null, please restart!");
         } else {
-            this.interrupt = false;
             return processUpload();
         }
     }
@@ -100,7 +103,6 @@ public class ResumeUploader {
         if (uuid == null) {
             throw new UpYunException("uuid is null, please restart!");
         } else {
-            this.interrupt = false;
             return processUpload();
         }
     }
@@ -124,15 +126,6 @@ public class ResumeUploader {
     }
 
     /**
-     * 中断上传
-     */
-    public void interrupt(OnInterruptListener listener) {
-
-        this.onInterruptListener = listener;
-        interrupt = true;
-    }
-
-    /**
      * 开始上传
      *
      * @param file       本地上传文件
@@ -142,8 +135,6 @@ public class ResumeUploader {
      * @throws IOException
      */
     public boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException {
-
-        this.interrupt = false;
 
         this.mFile = file;
 
@@ -162,6 +153,115 @@ public class ResumeUploader {
                 .build();
 
         return startUpload(params);
+    }
+
+    /** 异步上传（添加视频处理参数）
+     *
+     * @param file       本地上传文件
+     * @param uploadPath 上传服务器路径
+     * @param restParams 通用上传参数（见 rest api 文档）
+     * @param processParam 异步处理上传参数 （见 云处理 api 文档）
+     * @param completeListener 成功失败回调
+     */
+    public void upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener) {
+
+        final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
+            @Override
+            public void onComplete(final boolean isSuccess, final String result) {
+                AsyncRun.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (completeListener != null) {
+                            completeListener.onComplete(isSuccess, result);
+                        }
+                    }
+                });
+            }
+        };
+
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    upload(file, uploadPath, restParams);
+
+                    String date = getGMTDate();
+
+                    String sign = sign("POST", date, "/pretreatment/", userName, password, null);
+
+                    processParam.put(Params.TASKS, Base64Coder.encodeString(processParam.get(Params.TASKS).toString()));
+
+                    FormBody.Builder builder = new FormBody.Builder();
+
+                    for (Map.Entry<String, Object> mapping : processParam.entrySet()) {
+                        builder.addEncoded(mapping.getKey(), mapping.getValue().toString());
+                    }
+
+                    String processURL = "http://p0.api.upyun.com/pretreatment/";
+                    Request request = new Request.Builder()
+                            .url(processURL)
+                            .post(builder.build())
+                            .header(DATE, date)
+                            .header(AUTHORIZATION, sign)
+                            .header("User-Agent", UpYunUtils.VERSION)
+                            .build();
+
+                    Response response = mClient.newCall(request).execute();
+
+                    if (!response.isSuccessful()) {
+                        uiCompleteListener.onComplete(false, response.body().string());
+                    } else {
+                        uiCompleteListener.onComplete(true, response.body().string());
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                } catch (UpYunException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                }
+            }
+        });
+    }
+    /**
+     * 异步上传
+     *
+     * @param file       本地上传文件
+     * @param uploadPath 上传服务器路径
+     * @param restParams 通用上传参数（见 rest api 文档）
+     * @param completeListener 成功失败回调
+     */
+    public void upload(final File file, final String uploadPath, final Map<String, String> restParams, final UpCompleteListener completeListener) {
+
+        final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
+            @Override
+            public void onComplete(final boolean isSuccess, final String result) {
+                AsyncRun.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (completeListener != null) {
+                            completeListener.onComplete(isSuccess, result);
+                        }
+                    }
+                });
+            }
+        };
+
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    upload(file, uploadPath, restParams);
+                    uiCompleteListener.onComplete(true, null);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                } catch (UpYunException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                }
+            }
+        });
     }
 
     /**
@@ -197,7 +297,7 @@ public class ResumeUploader {
      *
      * @param onProgressListener 上传进度 listener
      */
-    public void setOnProgressListener(OnProgressListener onProgressListener) {
+    public void setOnProgressListener(UpProgressListener onProgressListener) {
         this.onProgressListener = onProgressListener;
     }
 
@@ -225,7 +325,7 @@ public class ResumeUploader {
             md5 = UpYunUtils.md5("");
         }
 
-        String sign = sign("PUT", date, uploadPath, bucketName, userName, password, md5);
+        String sign = sign("PUT", date, "/" + bucketName + uploadPath, userName, password, md5);
 
         Request.Builder builder = new Request.Builder()
                 .url(url)
@@ -249,7 +349,7 @@ public class ResumeUploader {
         callRequest(builder.build());
 
         if (onProgressListener != null) {
-            onProgressListener.onProgress(1, totalBlock);
+            onProgressListener.onRequestProgress(1, totalBlock);
         }
 
         return processUpload();
@@ -258,12 +358,6 @@ public class ResumeUploader {
     private boolean processUpload() throws IOException, UpYunException {
         byte[] data = new byte[0];
         while (nextPartIndex >= 0) {
-
-            if (interrupt && onInterruptListener != null) {
-                onInterruptListener.OnInterrupt(true);
-                onInterruptListener = null;
-                return false;
-            }
 
             data = readBlockByIndex(nextPartIndex);
 
@@ -277,7 +371,7 @@ public class ResumeUploader {
                 md5 = UpYunUtils.md5(data);
             }
 
-            String sign = sign("PUT", date, uploadPath, bucketName, userName, password, md5);
+            String sign = sign("PUT", date, "/" + bucketName + uploadPath, userName, password, md5);
 
             Request.Builder builder = new Request.Builder()
                     .url(url)
@@ -294,7 +388,7 @@ public class ResumeUploader {
             }
 
             if (onProgressListener != null) {
-                onProgressListener.onProgress(nextPartIndex + 2, totalBlock);
+                onProgressListener.onRequestProgress(nextPartIndex + 2, totalBlock);
             }
             callRequest(builder.build());
         }
@@ -303,12 +397,6 @@ public class ResumeUploader {
     }
 
     private boolean completeUpload() throws IOException, UpYunException {
-
-        if (interrupt && onInterruptListener != null) {
-            onInterruptListener.OnInterrupt(true);
-            onInterruptListener = null;
-            return false;
-        }
 
         RequestBody requestBody = RequestBody.create(null, "");
 
@@ -320,7 +408,7 @@ public class ResumeUploader {
             md5 = UpYunUtils.md5("");
         }
 
-        String sign = sign("PUT", date, uploadPath, bucketName, userName, password, md5);
+        String sign = sign("PUT", date, "/" + bucketName + uploadPath, userName, password, md5);
 
         Request.Builder builder = new Request.Builder()
                 .url(url)
@@ -338,7 +426,7 @@ public class ResumeUploader {
         callRequest(builder.build());
 
         if (onProgressListener != null) {
-            onProgressListener.onProgress(totalBlock, totalBlock);
+            onProgressListener.onRequestProgress(totalBlock, totalBlock);
         }
 
         uuid = null;
@@ -352,7 +440,7 @@ public class ResumeUploader {
         Response response = currentCall.execute();
         if (!response.isSuccessful()) {
             int x_error_code = Integer.parseInt(response.header("X-Error-Code", "-1"));
-            Log.e("x_error_code", "::"+x_error_code);
+            Log.e("x_error_code", "::" + x_error_code);
             if (x_error_code != 40011061 && x_error_code != 40011059) {
                 uuid = null;
                 throw new UpYunException(response.body().string());
@@ -378,13 +466,14 @@ public class ResumeUploader {
         return formater.format(new Date());
     }
 
-    private String sign(String method, String date, String path, String bucket, String userName, String password, String md5) throws UpYunException {
+    private String sign(String method, String date, String path, String userName, String password, String md5) throws UpYunException {
 
         StringBuilder sb = new StringBuilder();
         String sp = "&";
         sb.append(method);
         sb.append(sp);
-        sb.append("/" + bucket + path);
+//        sb.append("/" + bucket + path);
+        sb.append(path);
 
         sb.append(sp);
         sb.append(date);
@@ -402,7 +491,7 @@ public class ResumeUploader {
         }
 
         if (hmac != null) {
-            return "UpYun " + userName + ":" + Base64Coder.encodeLines(hmac);
+            return "UPYUN " + userName + ":" + Base64Coder.encodeLines(hmac);
         }
 
         return null;
@@ -424,11 +513,65 @@ public class ResumeUploader {
         return block;
     }
 
-    public interface OnProgressListener {
-        void onProgress(int index, int total);
-    }
-
     public interface OnInterruptListener {
         void OnInterrupt(boolean interrupted);
+    }
+
+    public class Params {
+        /**
+         * 请求参数
+         * <p>
+         * bucket_name string  是	文件所在服务名称（空间名称）
+         * notify_url	string	是	回调通知地址
+         * source  string  是	待处理文件路径
+         * tasks	string	是	处理任务信息，详见下
+         * accept	string	是	必须指定为 json
+         */
+        public final static String BUCKET_NAME = "bucket_name";
+        public final static String NOTIFY_URL = "notify_url";
+        public final static String SOURCE = "source";
+        public final static String TASKS = "tasks";
+        public final static String ACCEPT = "accept";
+
+
+        /**
+         * 回调通知参数
+         * <p>
+         * status_code	integer	处理结果状态码，200 表示成功处理
+         * path	array	输出文件保存路径
+         * description	string	处理结果描述
+         * task_id	string	任务对应的 task_id
+         * info	string	视频文件的元数据信息。经过 base64 处理过之后的 JSON 字符串，仅当 type 为 video且 return_info 为 true 时返回
+         * signature	string	回调验证签名，用户端程序可以通过校验签名，判断回调通知的合法性
+         * timestamp	integer	服务器回调此信息时的时间戳
+         */
+        public final static String STATUS_CODE = "status_code";
+        public final static String PATH = "path";
+        public final static String DESCRIPTION = "description";
+        public final static String TASK_ID = "task_id";
+        public final static String INFO = "info";
+        public final static String SIGNATURE = "signature";
+        public final static String TIMESTAMP = "timestamp";
+
+        /**
+         * 查询参数
+         * <p>
+         * task_ids	string	任务 id 以 , 作为分隔符，最多 20 个
+         */
+        public final static String TASK_IDS = "task_ids";
+
+        /**
+         * 处理通用参数
+         * <p>
+         * type	string	音视频处理类型。不同的处理任务对应不同的 type，详见下方各处理任务说明
+         * save_as	string	输出文件保存路径（同一个空间下），如果没有指定，系统自动生成在同空间同目录下
+         * return_info	boolean	是否返回 JSON 格式元数据，默认 false。支持 type 值为 video 功能
+         * avopts	string	音视频处理参数, 格式为 /key/value/key/value/...
+         */
+        public final static String TYPE = "type";
+        public final static String SAVE_AS = "save_as";
+        public final static String RETURN_INFO = "return_info";
+        public final static String AVOPTS = "avopts";
+
     }
 }
