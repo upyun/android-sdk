@@ -12,13 +12,17 @@ UPYUN Android SDK, 集成：
 
 ## 使用说明：
 
-1.直接[下载 JAR 包](https://github.com/upyun/android-sdk/tree/master/release-lib/1.0.3)复制进项目使用, SDK 依赖 [okhttp](http://square.github.io/okhttp/)。
+1.直接[下载 JAR 包](https://github.com/upyun/android-sdk/tree/master/release-lib/1.0.3)复制进项目使用, SDK 依赖 [okhttp](http://square.github.io/okhttp/)。（2.0 以后不再提供 jar 包下载）
 
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
 ```
 compile 'com.upyun:upyun-android-sdk:2.0.5'
 ```
+
+3.DEMO 示例在 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
+
+
 ## 参数设置
 
 在 [UpConfig](https://github.com/upyun/android-sdk/blob/master/upyun-android-sdk/src/main/java/com/upyun/library/common/UpConfig.java) 中可以对 SDK 的一些参数进行配置。
@@ -36,53 +40,6 @@ compile 'com.upyun:upyun-android-sdk:2.0.5'
 
 
 ## 上传接口
-
-> 详细示例请见 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
-
-
-### 表单上传（旧）
-
-```
-UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-```
-
-使用该方法，直接选择通过表单上传方式上传文件。
-
-参数说明：
-
-* `localFilePath`  文件路径
-* `paramsMap`  参数键值对
-* `KEY`  表单 API 验证密钥（form_api_secret）
-* `signatureListener`  获取签名回调
-* `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
-* `progressListener`  进度条回调(回调到 UI 线程，可为 NULL)
-
-
-两种上传方式可根据自己情况选择一种，`KEY` 用户可直接保存在客户端，`signatureListener` 用户可以通过请求服务器获取签名返回客户端。`signatureListener` 回调接口规则如下：
-
-```
-SignatureListener signatureListener=new SignatureListener() {
-    @Override
-    public String getSignature(String raw) {
-        return UpYunUtils.md5(raw+KEY);
-    }
-};
-```
-将参数 `raw` 传给后台服务器和表单密匙连接后做一次 md5 运算返回结果。
-
-参数键值对中 `Params.BUCKET`（上传空间名）和 `Params.SAVE_KEY` 或 `Params.PATH`（保存路径，任选一个）为必选参数，
-其他可选参数见 [Params](https://github.com/upyun/android-sdk/blob/master/upyun-android-sdk/src/main/java/com/upyun/library/common/Params.java) 或者[官网 API 文档](http://docs.upyun.com/api/form_api/)。
-
-### 分块上传（旧）
-
-```
-UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
-UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
-```
-
-使用该方法，直接选择通过分块上传方式上传文件。
-参数说明：同上。
 
 ### 表单上传 (新)
 ```
@@ -134,6 +91,50 @@ uploader.upload(final File file, final String uploadPath, final Map<String, Stri
 * `restParams ` rest api 上传预处理参数可为空 （详见[文档](http://docs.upyun.com/api/rest_api/#_17)）
 * `processParam `  异步音视频处理参数可为空 （详见[文档](http://docs.upyun.com/cloud/av/)）
 * `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
+
+### 表单上传（旧）
+
+```
+UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+UploadManager.getInstance().formUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+```
+
+使用该方法，直接选择通过表单上传方式上传文件。
+
+参数说明：
+
+* `localFilePath`  文件路径
+* `paramsMap`  参数键值对
+* `KEY`  表单 API 验证密钥（form_api_secret）
+* `signatureListener`  获取签名回调
+* `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
+* `progressListener`  进度条回调(回调到 UI 线程，可为 NULL)
+
+
+两种上传方式可根据自己情况选择一种，`KEY` 用户可直接保存在客户端，`signatureListener` 用户可以通过请求服务器获取签名返回客户端。`signatureListener` 回调接口规则如下：
+
+```
+SignatureListener signatureListener=new SignatureListener() {
+    @Override
+    public String getSignature(String raw) {
+        return UpYunUtils.md5(raw+KEY);
+    }
+};
+```
+将参数 `raw` 传给后台服务器和表单密匙连接后做一次 md5 运算返回结果。
+
+参数键值对中 `Params.BUCKET`（上传空间名）和 `Params.SAVE_KEY` 或 `Params.PATH`（保存路径，任选一个）为必选参数，
+其他可选参数见 [Params](https://github.com/upyun/android-sdk/blob/master/upyun-android-sdk/src/main/java/com/upyun/library/common/Params.java) 或者[官网 API 文档](http://docs.upyun.com/api/form_api/)。
+
+### 分块上传（旧）
+
+```
+UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, KEY, completeListener, progressListener);
+UploadManager.getInstance().blockUpload(new File(localFilePath), paramsMap, signatureListener, completeListener, progressListener);
+```
+
+使用该方法，直接选择通过分块上传方式上传文件。
+参数说明：同上。
 
 ## 测试
 
