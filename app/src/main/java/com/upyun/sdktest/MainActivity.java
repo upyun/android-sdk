@@ -71,6 +71,8 @@ public class MainActivity extends Activity {
         paramsMap.put(Params.BUCKET, SPACE);
         //保存路径，任选其中一个
         paramsMap.put(Params.SAVE_KEY, savePath);
+        //添加 CONTENT_LENGTH 参数使用大文件表单上传
+        paramsMap.put(Params.CONTENT_LENGTH, temp.length());
 
 
 //        Locale locale = Locale.US;
@@ -142,7 +144,7 @@ public class MainActivity extends Activity {
 
     public void resumeUpload(View view) throws JSONException {
 
-        File file = new File("/mnt/sdcard/test.mp4");
+        File file = new File(SAMPLE_PIC_FILE);
 
         //初始化断点续传
         uploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));

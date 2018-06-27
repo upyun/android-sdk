@@ -13,7 +13,7 @@ public class UpConfig {
     public static final String FORM_HOST = "http://v0.api.upyun.com";
     public static final String BLOCK_HOST = "http://m0.api.upyun.com";
     //失败重传次数
-    public static final int RETRY_TIME = 2;
+    public static int RETRY_TIME = 0;
 
     //超时设置 单位秒(SECONDS)
     public static int CONNECT_TIMEOUT = 15;

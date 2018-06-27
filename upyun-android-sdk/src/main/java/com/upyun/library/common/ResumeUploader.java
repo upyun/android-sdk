@@ -155,15 +155,22 @@ public class ResumeUploader {
         return startUpload(params);
     }
 
-    /** 异步上传（添加视频处理参数）
+    /**
+     * 异步上传（添加视频处理参数）
      *
-     * @param file       本地上传文件
-     * @param uploadPath 上传服务器路径
-     * @param restParams 通用上传参数（见 rest api 文档）
-     * @param processParam 异步处理上传参数 （见 云处理 api 文档）
+     * @param file             本地上传文件
+     * @param uploadPath       上传服务器路径
+     * @param restParams       通用上传参数（见 rest api 文档）
+     * @param processParam     异步处理上传参数 （见 云处理 api 文档）
      * @param completeListener 成功失败回调
      */
     public void upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener) {
+
+        if (processParam == null) {
+            upload(file, uploadPath, restParams, completeListener);
+            return;
+        }
+
 
         final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
@@ -226,9 +233,9 @@ public class ResumeUploader {
     /**
      * 异步上传
      *
-     * @param file       本地上传文件
-     * @param uploadPath 上传服务器路径
-     * @param restParams 通用上传参数（见 rest api 文档）
+     * @param file             本地上传文件
+     * @param uploadPath       上传服务器路径
+     * @param restParams       通用上传参数（见 rest api 文档）
      * @param completeListener 成功失败回调
      */
     public void upload(final File file, final String uploadPath, final Map<String, String> restParams, final UpCompleteListener completeListener) {
