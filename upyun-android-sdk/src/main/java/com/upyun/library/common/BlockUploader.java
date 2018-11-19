@@ -47,6 +47,7 @@ public class BlockUploader implements Runnable {
     private SignatureListener signatureListener;
     private int retryTime;
 
+    @Deprecated
     public BlockUploader(UploadClient upLoaderClient, File file, Map<String, Object> localParams, String apiKey, SignatureListener signatureListener, UpCompleteListener uiCompleteListener, UpProgressListener uiProgressListener) {
         this.client = upLoaderClient;
         this.file = file;
