@@ -26,6 +26,7 @@ public class FormUploader implements Runnable {
     private SignatureListener signatureListener;
 
 
+    @Deprecated
     public FormUploader(UploadClient upLoaderClient, File file, Map<String, Object> localParams, String apiKey, SignatureListener signatureListener, UpCompleteListener uiCompleteListener, UpProgressListener uiProgressListener) {
         this.client = upLoaderClient;
         this.file = file;

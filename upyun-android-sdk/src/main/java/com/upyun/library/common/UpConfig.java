@@ -10,7 +10,7 @@ public class UpConfig {
     //默认过期时间1800s
     public static long EXPIRATION = 1800;
     //表单和分块host地址
-    public static final String FORM_HOST = "http://v0.api.upyun.com";
+    public static final String FORM_HOST = "https://v0.api.upyun.com";
     public static final String BLOCK_HOST = "http://m0.api.upyun.com";
     //失败重传次数
     public static int RETRY_TIME = 0;
