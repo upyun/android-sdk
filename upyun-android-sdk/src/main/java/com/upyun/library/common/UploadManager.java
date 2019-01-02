@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@Deprecated
 public class UploadManager {
     private static UploadManager instance;
     private ExecutorService executor;
@@ -79,7 +80,7 @@ public class UploadManager {
         }
 
         if (params.get(Params.EXPIRATION) == null) {
-            params.put(Params.EXPIRATION, System.currentTimeMillis()/1000 + UpConfig.EXPIRATION);
+            params.put(Params.EXPIRATION, System.currentTimeMillis() / 1000 + UpConfig.EXPIRATION);
         }
 
         UpProgressListener uiProgressListener = new UpProgressListener() {

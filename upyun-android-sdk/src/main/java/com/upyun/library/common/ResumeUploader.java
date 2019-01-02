@@ -41,7 +41,7 @@ public class ResumeUploader {
     private static final String X_UPYUN_MULTI_UUID = "X-Upyun-Multi-UUID";
     private static final String X_UPYUN_PART_ID = "X-Upyun-Part-ID";
     private static final String X_UPYUN_NEXT_PART_ID = "X-Upyun-Next-Part-ID";
-    private static final String HOST = "http://v0.api.upyun.com";
+    private static final String HOST = "https://v0.api.upyun.com";
 
     private String uuid;
     private String uploadPath;
