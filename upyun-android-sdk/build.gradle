@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.novoda.bintray-release'
 
 android {
     compileSdkVersion 27
@@ -23,29 +24,11 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.12.2'
 }
 
-//ext {
-//    bintrayRepo = 'maven'
-//    bintrayName = 'upyun-android-sdk'
-//
-//    publishedGroupId = 'com.upyun'
-//    libraryName = 'upyun-android-sdk'
-//    artifact = 'upyun-android-sdk'
-//
-//    libraryDescription = 'A upload sdk on Android'
-//
-//    siteUrl = 'https://github.com/upyun/android-sdk'
-//    gitUrl = 'https://github.com/upyun/android-sdk.git'
-//
-//    libraryVersion = '2.0.3'
-//
-//    developerId = 'yemingm'
-//    developerName = 'yemingm'
-//    developerEmail = 'yemingm@qq.com'
-//
-//    licenseName = 'The Apache Software License, Version 2.0'
-//    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-//    allLicenses = ["Apache-2.0"]
-//}
-//
-//apply from: 'installv1.gradle'
-//apply from: 'bintrayv1.gradle'
+publish {
+    userOrg = 'upyun'
+    groupId = 'com.upyun'
+    artifactId = 'upyun-android-sdk'
+    publishVersion = '2.0.8'
+    desc = 'A upload sdk on Android'
+    website = 'https://github.com/upyun/android-sdk'
+}
