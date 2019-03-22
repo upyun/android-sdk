@@ -17,7 +17,7 @@ UPYUN Android SDK, 集成：
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
 ```
-compile 'com.upyun:upyun-android-sdk:2.0.7'
+compile 'com.upyun:upyun-android-sdk:2.0.8'
 ```
 
 3.DEMO 示例在 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
@@ -61,7 +61,7 @@ UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, complet
 * `policy`  从服务器获取的 policy（生成规则见[官网文档](http://docs.upyun.com/api/authorization/)）
 * `progressListener`  从服务器获取的 signature（生成规则见[官网文档](http://docs.upyun.com/api/authorization/)）
 
-### 断点续传
+### 串行式断点续传
 
 2.0 提供一种新的上传方式可以用来代替分块上传，使用方式如下：
 
@@ -87,6 +87,32 @@ uploader.upload(final File file, final String uploadPath, final Map<String, Stri
 uploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener)
 
 ```
+
+### 并行式断点续传
+
+```
+//初始化断点续传
+ParallelUploader uploader = new ParallelUploader(SPACE,OPERATER,UpYunUtils.md5(PASSWORD));
+
+//设置 MD5 校验
+uploader.setCheckMD5(true);
+
+//设置进度监听
+uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
+      @Override
+      public void onProgress(int index, int total) {
+      }
+});
+
+//开始断点续传，可用方法 1 或方法 2
+//方法 1
+uploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final UpCompleteListener completeListener)
+
+//方法 2
+uploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener)
+
+```
+
 
 参数说明：
 

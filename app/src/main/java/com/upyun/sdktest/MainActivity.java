@@ -1,5 +1,6 @@
 package com.upyun.sdktest;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
@@ -7,6 +8,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.upyun.library.common.ParallelUploader;
 import com.upyun.library.common.Params;
 import com.upyun.library.common.ResumeUploader;
 import com.upyun.library.common.UploadEngine;
@@ -26,19 +28,27 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
     //空间名
-    public static String SPACE = "****";
+    public static String SPACE = "formtest";
     //操作员
-    public static String OPERATER = "****";
+    public static String OPERATER = "one";
     //密码
     public static String PASSWORD = "****";
 
-    private ProgressBar uploadProgress;
+    private ProgressBar bp_form;
 
-    private TextView textView;
+    private TextView tv_form;
+
+    private ProgressBar bp_resume;
+
+    private TextView tv_resume;
+
+    private ProgressBar bp_parallel;
+
+    private TextView tv_parallel;
 
     private String savePath = "/uploads/{year}{mon}{day}/{random32}{.suffix}";
 
@@ -48,24 +58,43 @@ public class MainActivity extends Activity {
 
     public static String KEY = "GqSu2v26RI+Xu3yLdsWfynTS/LM=";
 
-    private static final String SAMPLE_PIC_FILE = "/mnt/sdcard/test.jpeg";
-    private ResumeUploader uploader;
+    @SuppressLint("SdCardPath")
+    private static final String SAMPLE_PIC_FILE = "/mnt/sdcard/tdtest.mp4";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        File temp = null;
-        try {
-            temp = getTempFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-//        temp = new File(SAMPLE_PIC_FILE);
-
         setContentView(R.layout.activity_main);
-        uploadProgress = (ProgressBar) findViewById(R.id.progressBar);
-        textView = (TextView) findViewById(R.id.tv_process);
+        initView();
+    }
+
+    private void initView() {
+        bp_form = findViewById(R.id.pb_form);
+        tv_form = findViewById(R.id.tv_form);
+
+        findViewById(R.id.bt_form).setOnClickListener(this);
+
+
+        bp_resume = findViewById(R.id.pb_resume);
+        tv_resume = findViewById(R.id.tv_resume);
+        findViewById(R.id.bt_resume).setOnClickListener(this);
+
+        bp_parallel = findViewById(R.id.pb_parallel);
+        tv_parallel = findViewById(R.id.tv_parallel);
+
+        findViewById(R.id.bt_parallel).setOnClickListener(this);
+    }
+
+    private void formUpload() {
+        File temp = null;
+//        try {
+//            temp = getTempFile();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        temp = new File(SAMPLE_PIC_FILE);
+
         final Map<String, Object> paramsMap = new HashMap<>();
         //上传空间
         paramsMap.put(Params.BUCKET, SPACE);
@@ -75,13 +104,6 @@ public class MainActivity extends Activity {
         paramsMap.put(Params.CONTENT_LENGTH, temp.length());
 
 
-//        Locale locale = Locale.US;
-//        Date d = new Date();
-//        DateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", locale);
-//        format.setTimeZone(TimeZone.getTimeZone("GMT"));
-//        System.out.println(format.format(d));
-//        paramsMap.put(Params.DATE, format.format(d));
-
         paramsMap.put(Params.CONTENT_MD5, UpYunUtils.md5Hex(temp));
 //        paramsMap.put(Params.PATH, savePath);
         //可选参数（详情见api文档介绍）
@@ -89,9 +111,9 @@ public class MainActivity extends Activity {
         //进度回调，可为空
         UpProgressListener progressListener = new UpProgressListener() {
             @Override
-            public void onRequestProgress(final long bytesWrite, final long contentLength) {
-                uploadProgress.setProgress((int) ((100 * bytesWrite) / contentLength));
-                textView.setText((100 * bytesWrite) / contentLength + "%");
+            public void onRequestProgress(long bytesWrite, long contentLength) {
+                bp_form.setProgress((int) ((100 * bytesWrite) / contentLength));
+                tv_form.setText((100 * bytesWrite) / contentLength + "%");
                 Log.e(TAG, (100 * bytesWrite) / contentLength + "%");
                 Log.e(TAG, bytesWrite + "::" + contentLength);
             }
@@ -101,7 +123,7 @@ public class MainActivity extends Activity {
         UpCompleteListener completeListener = new UpCompleteListener() {
             @Override
             public void onComplete(boolean isSuccess, String result) {
-                textView.setText(isSuccess + ":" + result);
+                tv_form.setText(isSuccess + ":" + result);
                 Log.e(TAG, isSuccess + ":" + result);
             }
         };
@@ -138,16 +160,17 @@ public class MainActivity extends Activity {
         //表单上传（本地签名方式）
         UploadEngine.getInstance().formUpload(temp, paramsMap, OPERATER, UpYunUtils.md5(PASSWORD), completeListener, progressListener);
 
+
         //表单上传（服务器签名方式）
-        UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener);
+//        UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener);
     }
 
-    public void resumeUpload(View view) throws JSONException {
+    public void resumeUpload() {
 
         File file = new File(SAMPLE_PIC_FILE);
 
         //初始化断点续传
-        uploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
+        ResumeUploader uploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
 
         //设置 MD5 校验
         uploader.setCheckMD5(true);
@@ -156,6 +179,7 @@ public class MainActivity extends Activity {
         uploader.setOnProgressListener(new UpProgressListener() {
             @Override
             public void onRequestProgress(long bytesWrite, long contentLength) {
+                bp_resume.setProgress((int) ((100 * bytesWrite) / contentLength));
                 Log.e(TAG, bytesWrite + ":" + contentLength);
             }
         });
@@ -170,25 +194,28 @@ public class MainActivity extends Activity {
 
         JSONArray array = new JSONArray();
 
-        JSONObject json = new JSONObject();
+        try {
+            JSONObject json = new JSONObject();
+            json.put(ResumeUploader.Params.TYPE, "video");
+            json.put(ResumeUploader.Params.AVOPTS, "/s/240p(4:3)/as/1/r/30");
+            json.put(ResumeUploader.Params.RETURN_INFO, "true");
+            json.put(ResumeUploader.Params.SAVE_AS, "testProcess.mp4");
 
-        json.put(ResumeUploader.Params.TYPE, "video");
-        json.put(ResumeUploader.Params.AVOPTS, "/s/240p(4:3)/as/1/r/30");
-        json.put(ResumeUploader.Params.RETURN_INFO, "true");
-        json.put(ResumeUploader.Params.SAVE_AS, "testProcess.mp4");
+            JSONObject json2 = new JSONObject();
 
-        JSONObject json2 = new JSONObject();
-
-        json2.put(ResumeUploader.Params.TYPE, "video");
-        json2.put(ResumeUploader.Params.AVOPTS, "/s/240p(4:3)/as/1/r/30");
-        json2.put(ResumeUploader.Params.RETURN_INFO, "true");
-        json2.put(ResumeUploader.Params.SAVE_AS, "testProcess2.mp4");
-
-        array.put(json2);
-        array.put(json);
+            json2.put(ResumeUploader.Params.TYPE, "video");
+            json2.put(ResumeUploader.Params.AVOPTS, "/s/240p(4:3)/as/1/r/30");
+            json2.put(ResumeUploader.Params.RETURN_INFO, "true");
+            json2.put(ResumeUploader.Params.SAVE_AS, "testProcess2.mp4");
+            array.put(json2);
+            array.put(json);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         processParam.put(ResumeUploader.Params.TASKS, array);
 
+        //串行断点上传
 //        uploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
 //            @Override
 //            public void onComplete(boolean isSuccess, String result) {
@@ -196,6 +223,7 @@ public class MainActivity extends Activity {
 //            }
 //        });
 
+        //带异步处理参数的断点上传
         uploader.upload(file, "/test.mp4", null, processParam, new UpCompleteListener() {
             @Override
             public void onComplete(boolean isSuccess, String result) {
@@ -204,13 +232,62 @@ public class MainActivity extends Activity {
         });
     }
 
+    public void parallelUpload() {
+
+        File file = new File(SAMPLE_PIC_FILE);
+
+        //初始化断点续传
+        ParallelUploader uploader = new ParallelUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
+
+        //设置 MD5 校验
+        uploader.setCheckMD5(true);
+
+        //设置进度监听
+        uploader.setOnProgressListener(new UpProgressListener() {
+            @Override
+            public void onRequestProgress(long bytesWrite, long contentLength) {
+                bp_parallel.setProgress((int) ((100 * bytesWrite) / contentLength));
+                Log.e(TAG, bytesWrite + ":" + contentLength);
+            }
+        });
+
+        uploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
+            @Override
+            public void onComplete(boolean isSuccess, String result) {
+                Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
+            }
+        });
+
+//        uploader.upload(file, "/test.mp4", null, processParam, new UpCompleteListener() {
+//            @Override
+//            public void onComplete(boolean isSuccess, String result) {
+//                Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
+//            }
+//        });
+    }
+
 
     private File getTempFile() throws IOException {
-        File temp = File.createTempFile("upyun", "test");
+        File temp = File.createTempFile("你好啊啊", "test");
         temp.deleteOnExit();
         OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(temp));
         outputStream.write("just for test !".getBytes());
         outputStream.close();
         return temp;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.bt_form:
+                formUpload();
+                break;
+            case R.id.bt_resume:
+                resumeUpload();
+                break;
+            case R.id.bt_parallel:
+                parallelUpload();
+                break;
+        }
     }
 }
