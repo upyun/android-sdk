@@ -9,25 +9,84 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.upyun.sdktest.MainActivity">
 
-    <TextView
-        android:id="@+id/tv_process"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!" />
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleHorizontal"
+    <LinearLayout
+        android:id="@+id/ll_form"
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/tv_process"
-        android:layout_centerHorizontal="true"
-        android:indeterminate="false" />
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/tv_form"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/progressBar"
-        android:onClick="resumeUpload"
-        android:text="resumeUpload" />
+        <ProgressBar
+            android:id="@+id/pb_form"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:indeterminate="false" />
+
+        <Button
+            android:id="@+id/bt_form"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="表单上传" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_resume"
+        android:layout_below="@id/ll_form"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/tv_resume"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ProgressBar
+            android:id="@+id/pb_resume"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:indeterminate="false" />
+
+        <Button
+            android:id="@+id/bt_resume"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="串行式断点上传" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_below="@id/ll_resume"
+        android:id="@+id/ll_parallel"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/tv_parallel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ProgressBar
+            android:id="@+id/pb_parallel"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:indeterminate="false" />
+
+        <Button
+            android:id="@+id/bt_parallel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="并行式断点上传" />
+
+    </LinearLayout>
+
 </RelativeLayout>

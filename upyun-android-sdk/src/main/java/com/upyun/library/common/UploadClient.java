@@ -36,7 +36,7 @@ public class UploadClient {
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("policy", policy)
                 .addFormDataPart("authorization", "UPYUN " + operator + ":" + signature)
-                .addFormDataPart("file", file.getName(), RequestBody.create(null, file))
+                .addFormDataPart("file", "file", RequestBody.create(null, file))
                 .build();
 
         if (listener != null) {
@@ -64,7 +64,7 @@ public class UploadClient {
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("policy", policy)
                 .addFormDataPart("signature", signature)
-                .addFormDataPart("file", file.getName(), RequestBody.create(null, file))
+                .addFormDataPart("file", "file", RequestBody.create(null, file))
                 .build();
 
         if (listener != null) {

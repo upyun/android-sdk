@@ -9,20 +9,27 @@ import com.upyun.library.utils.AsyncRun;
 import com.upyun.library.utils.Base64Coder;
 import com.upyun.library.utils.UpYunUtils;
 
-import okhttp3.*;
-
-
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class ResumeUploader {
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+public class ParallelUploader {
 
     private static final String AUTHORIZATION = "Authorization";
     private static final int BLOCK_SIZE = 1024 * 1024;
@@ -34,20 +41,18 @@ public class ResumeUploader {
     private static final String CONTENT_SECRET = "Content-Secret";
     private static final String X_Upyun_Meta_X = "X-Upyun-Meta-X";
 
+    private static final String X_UPYUN_MULTI_DISORDER = "X-Upyun-Multi-Disorder";
     private static final String X_UPYUN_MULTI_STAGE = "X-Upyun-Multi-Stage";
     private static final String X_UPYUN_MULTI_TYPE = "X-Upyun-Multi-Type";
     private static final String X_UPYUN_MULTI_LENGTH = "X-Upyun-Multi-Length";
-    private static final String X_UPYUN_META_X = "X-Upyun-Meta-X";
     private static final String X_UPYUN_MULTI_UUID = "X-Upyun-Multi-UUID";
     private static final String X_UPYUN_PART_ID = "X-Upyun-Part-ID";
-    private static final String X_UPYUN_NEXT_PART_ID = "X-Upyun-Next-Part-ID";
     private static final String HOST = "https://v0.api.upyun.com";
 
     private String uuid;
     private String uploadPath;
     private OkHttpClient mClient;
     private File mFile;
-    private int nextPartIndex;
     private RandomAccessFile randomAccessFile;
 
     private boolean checkMD5;
@@ -63,49 +68,27 @@ public class ResumeUploader {
 
     private String url;
 
-    private Call currentCall;
-
     private UpProgressListener onProgressListener;
-
-    private OnInterruptListener onInterruptListener;
 
     private int totalBlock;
 
+    private volatile int blockProgress;
+
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-    /**
-     * 断点续传
-     *
-     * @return 是否上传成功
-     * @throws IOException
-     */
-    public boolean resume() throws IOException, UpYunException {
-        if (uuid == null) {
-            throw new UpYunException("uuid is null, please restart!");
-        } else {
-            return processUpload();
-        }
+    public void setParalle(int paralle) {
+        this.paralle = paralle;
     }
 
-    /**
-     * 断点续传
-     *
-     * @param uuid           上传任务 uuid
-     * @param newxtPartIndex 下一个上传分块 index
-     * @return
-     * @throws IOException
-     */
-    public boolean resume(String uuid, int newxtPartIndex) throws IOException, UpYunException {
+    //并行式断点并行数
+    private int paralle = 4;
 
-        this.uuid = uuid;
-        this.nextPartIndex = newxtPartIndex;
-
-        if (uuid == null) {
-            throw new UpYunException("uuid is null, please restart!");
-        } else {
-            return processUpload();
-        }
+    public void setRetryTime(int retryTime) {
+        this.retryTime = retryTime;
     }
+
+    //并行式断点分块重试册数
+    private int retryTime = 2;
 
     /**
      * 初始化 ResumeUploader
@@ -115,7 +98,7 @@ public class ResumeUploader {
      * @param password   密码，需要MD5加密
      * @return ResumeUploader object
      */
-    public ResumeUploader(String bucketName, String userName, String password) {
+    public ParallelUploader(String bucketName, String userName, String password) {
         this.bucketName = bucketName;
         this.userName = userName;
         this.password = password;
@@ -134,7 +117,7 @@ public class ResumeUploader {
      * @return 是否上传成功
      * @throws IOException
      */
-    public boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException {
+    public boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException {
 
         this.mFile = file;
 
@@ -226,6 +209,12 @@ public class ResumeUploader {
                 } catch (UpYunException e) {
                     e.printStackTrace();
                     uiCompleteListener.onComplete(false, e.toString());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
                 }
             }
         });
@@ -267,6 +256,12 @@ public class ResumeUploader {
                 } catch (UpYunException e) {
                     e.printStackTrace();
                     uiCompleteListener.onComplete(false, e.toString());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
                 }
             }
         });
@@ -281,15 +276,6 @@ public class ResumeUploader {
         return uuid;
     }
 
-
-    /**
-     * 获取下一个上传分块 index
-     *
-     * @return index
-     */
-    public int getNextPartIndex() {
-        return nextPartIndex;
-    }
 
     /**
      * 设置是否 MD5 校验
@@ -309,15 +295,7 @@ public class ResumeUploader {
         this.onProgressListener = onProgressListener;
     }
 
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
-
-    public void setNextPartIndex(int nextPartIndex) {
-        this.nextPartIndex = nextPartIndex;
-    }
-
-    private boolean startUpload(Map<String, String> params) throws IOException, UpYunException {
+    private boolean startUpload(Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException {
 
         if (uuid != null) {
             return processUpload();
@@ -339,6 +317,7 @@ public class ResumeUploader {
                 .url(url)
                 .header(DATE, date)
                 .header(AUTHORIZATION, sign)
+                .header(X_UPYUN_MULTI_DISORDER, "true")
                 .header(X_UPYUN_MULTI_STAGE, "initiate")
                 .header(X_UPYUN_MULTI_TYPE, "application/octet-stream")
                 .header(X_UPYUN_MULTI_LENGTH, mFile.length() + "")
@@ -354,54 +333,116 @@ public class ResumeUploader {
         if (md5 != null) {
             builder.header(CONTENT_MD5, md5);
         }
-        callRequest(builder.build());
-
-        if (onProgressListener != null) {
-            onProgressListener.onRequestProgress(1, totalBlock);
-        }
+        callRequest(builder.build(), 1);
 
         return processUpload();
     }
 
-    private boolean processUpload() throws IOException, UpYunException {
-        byte[] data = new byte[0];
-        while (nextPartIndex >= 0) {
+    private boolean processUpload() throws IOException, UpYunException, InterruptedException, ExecutionException {
 
-            data = readBlockByIndex(nextPartIndex);
+        blockProgress = 0;
 
-            RequestBody requestBody = RequestBody.create(null, data);
+        ExecutorService uploadExecutor = Executors.newFixedThreadPool(paralle);
 
-            String date = getGMTDate();
+        for (int i = 0; i < totalBlock - 2; i++) {
+            Future future = uploadExecutor.submit(uploadBlock(i));
 
-            String md5 = null;
-
-            if (checkMD5) {
-                md5 = UpYunUtils.md5(data);
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                throw e;
+            } catch (ExecutionException e) {
+                throw e;
             }
+        }
 
-            String sign = sign("PUT", date, "/" + bucketName + uploadPath, userName, password, md5).trim();
+        uploadExecutor.shutdown();
 
-            Request.Builder builder = new Request.Builder()
-                    .url(url)
-                    .header(DATE, date)
-                    .header(AUTHORIZATION, sign)
-                    .header(X_UPYUN_MULTI_STAGE, "upload")
-                    .header(X_UPYUN_MULTI_UUID, uuid)
-                    .header(X_UPYUN_PART_ID, nextPartIndex + "")
-                    .header("User-Agent", UpYunUtils.VERSION)
-                    .put(requestBody);
+        try {//等待直到所有任务完成
+            uploadExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-            if (md5 != null) {
-                builder.header(CONTENT_MD5, md5);
-            }
-
-            if (onProgressListener != null) {
-                onProgressListener.onRequestProgress(nextPartIndex + 2, totalBlock);
-            }
-            callRequest(builder.build());
+        if (randomAccessFile != null) {
+            randomAccessFile.close();
+            randomAccessFile = null;
         }
 
         return completeUpload();
+    }
+
+    private Runnable uploadBlock(final int index) {
+        return new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+                    byte[] data = readBlockByIndex(index);
+
+                    int retry = 0;
+
+                    RequestBody requestBody = RequestBody.create(null, data);
+
+                    String date = getGMTDate();
+
+                    String md5 = null;
+
+                    if (checkMD5) {
+                        md5 = UpYunUtils.md5(data);
+                    }
+
+                    String sign = sign("PUT", date, "/" + bucketName + uploadPath, userName, password, md5).trim();
+
+                    Request.Builder builder = new Request.Builder()
+                            .url(url)
+                            .header(DATE, date)
+                            .header(AUTHORIZATION, sign)
+                            .header(X_UPYUN_MULTI_STAGE, "upload")
+                            .header(X_UPYUN_MULTI_UUID, uuid)
+                            .header(X_UPYUN_PART_ID, index + "")
+                            .header("User-Agent", UpYunUtils.VERSION)
+                            .put(requestBody);
+
+                    if (md5 != null) {
+                        builder.header(CONTENT_MD5, md5);
+                    }
+
+                    Response response = uploadRequest(retry, builder);
+
+                    uuid = response.header(X_UPYUN_MULTI_UUID, "");
+
+                } catch (Exception e) {
+                    throw new RuntimeException(e.getMessage());
+                }
+            }
+        };
+
+    }
+
+    private Response uploadRequest(int retry, Request.Builder builder) {
+
+        try {
+            Response response = mClient.newCall(builder.build()).execute();
+            if (!response.isSuccessful() && retry < retryTime) {
+                return uploadRequest(++retry, builder);
+            } else if (!response.isSuccessful() && retry >= retryTime) {
+                throw new RuntimeException(response.body().string());
+            } else {
+                if (onProgressListener != null) {
+                    onProgressListener.onRequestProgress(blockProgress + 2, totalBlock);
+                }
+                blockProgress++;
+            }
+            return response;
+
+        } catch (IOException e) {
+            if (retry < retryTime) {
+                return uploadRequest(++retry, builder);
+            } else {
+                throw new RuntimeException(e.toString());
+            }
+        }
     }
 
     private boolean completeUpload() throws IOException, UpYunException {
@@ -431,46 +472,24 @@ public class ResumeUploader {
             builder.header(CONTENT_MD5, md5);
         }
 
-        callRequest(builder.build());
-
-        if (onProgressListener != null) {
-            onProgressListener.onRequestProgress(totalBlock, totalBlock);
-        }
-
-        if (randomAccessFile != null) {
-            randomAccessFile.close();
-            randomAccessFile = null;
-        }
+        callRequest(builder.build(), totalBlock);
 
         uuid = null;
         return true;
     }
 
-    private void callRequest(Request request) throws IOException, UpYunException {
+    private void callRequest(Request request, int index) throws IOException, UpYunException {
 
-        currentCall = mClient.newCall(request);
-
-        Response response = currentCall.execute();
+        Response response = mClient.newCall(request).execute();
         if (!response.isSuccessful()) {
-            int x_error_code = Integer.parseInt(response.header("X-Error-Code", "-1"));
-            Log.e("x_error_code", "::" + x_error_code);
-            if (x_error_code != 40011061 && x_error_code != 40011059) {
-
-                if (randomAccessFile != null) {
-                    randomAccessFile.close();
-                    randomAccessFile = null;
-                }
-
-                uuid = null;
-                throw new UpYunException(response.body().string());
-            } else {
-                nextPartIndex = Integer.parseInt(response.header(X_UPYUN_NEXT_PART_ID, "-2"));
-                return;
+            throw new UpYunException(response.body().string());
+        } else {
+            if (onProgressListener != null) {
+                onProgressListener.onRequestProgress(index, totalBlock);
             }
         }
 
         uuid = response.header(X_UPYUN_MULTI_UUID, "");
-        nextPartIndex = Integer.parseInt(response.header(X_UPYUN_NEXT_PART_ID, "-2"));
     }
 
     /**
