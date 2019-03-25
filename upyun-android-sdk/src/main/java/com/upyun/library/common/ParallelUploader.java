@@ -1,7 +1,5 @@
 package com.upyun.library.common;
 
-import android.util.Log;
-
 import com.upyun.library.exception.UpYunException;
 import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
@@ -12,7 +10,9 @@ import com.upyun.library.utils.UpYunUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -49,6 +49,7 @@ public class ParallelUploader {
     private static final String X_UPYUN_PART_ID = "X-Upyun-Part-ID";
     private static final String HOST = "https://v0.api.upyun.com";
 
+
     private String uuid;
     private String uploadPath;
     private OkHttpClient mClient;
@@ -83,12 +84,8 @@ public class ParallelUploader {
     //并行式断点并行数
     private int paralle = 4;
 
-    public void setRetryTime(int retryTime) {
-        this.retryTime = retryTime;
-    }
-
-    //并行式断点分块重试册数
-    private int retryTime = 2;
+    //分块上传状态 1 成功 2 上传中 3 上传失败
+    private int[] status;
 
     /**
      * 初始化 ResumeUploader
@@ -111,13 +108,13 @@ public class ParallelUploader {
     /**
      * 开始上传
      *
-     * @param file       本地上传文件
-     * @param uploadPath 上传服务器路径
-     * @param params     通用上传参数（见 rest api 文档）
+     * @param file   本地上传文件
+     * @param path   上传服务器路径
+     * @param params 通用上传参数（见 rest api 文档）
      * @return 是否上传成功
      * @throws IOException
      */
-    public boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException {
+    public boolean upload(File file, String path, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException {
 
         this.mFile = file;
 
@@ -125,7 +122,11 @@ public class ParallelUploader {
 
         this.randomAccessFile = new RandomAccessFile(mFile, "r");
 
-        this.uploadPath = uploadPath;
+        if (path.startsWith("/")) {
+            this.uploadPath = "/" + URLEncoder.encode(path.substring(1));
+        } else {
+            this.uploadPath = "/" + URLEncoder.encode(path);
+        }
 
         this.url = HOST + "/" + bucketName + uploadPath;
 
@@ -134,6 +135,10 @@ public class ParallelUploader {
                 .readTimeout(timeout, TimeUnit.SECONDS)
                 .writeTimeout(timeout, TimeUnit.SECONDS)
                 .build();
+
+        if (status == null || status.length != totalBlock - 2 || uuid == null) {
+            status = new int[totalBlock - 2];
+        }
 
         return startUpload(params);
     }
@@ -278,6 +283,33 @@ public class ParallelUploader {
 
 
     /**
+     * 设置 uuid
+     *
+     * @param uuid
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * 获取分块状态
+     *
+     * @return
+     */
+    public int[] getStatus() {
+        return status;
+    }
+
+    /**
+     * 设置分块状态
+     *
+     * @param status
+     */
+    public void setStatus(int[] status) {
+        this.status = status;
+    }
+
+    /**
      * 设置是否 MD5 校验
      *
      * @param checkMD5 是否 MD5 校验
@@ -378,9 +410,19 @@ public class ParallelUploader {
             public void run() {
 
                 try {
-                    byte[] data = readBlockByIndex(index);
+                    if (status[index] == 1) {
+                        if (onProgressListener != null) {
+                            onProgressListener.onRequestProgress(blockProgress + 2, totalBlock);
+                        }
+                        blockProgress++;
+                        return;
+                    } else if (status[index] == 2) {
+                        return;
+                    }
 
-                    int retry = 0;
+                    status[index] = 2;
+
+                    byte[] data = readBlockByIndex(index);
 
                     RequestBody requestBody = RequestBody.create(null, data);
 
@@ -408,11 +450,12 @@ public class ParallelUploader {
                         builder.header(CONTENT_MD5, md5);
                     }
 
-                    Response response = uploadRequest(retry, builder);
+                    Response response = uploadRequest(builder);
 
                     uuid = response.header(X_UPYUN_MULTI_UUID, "");
-
+                    status[index] = 1;
                 } catch (Exception e) {
+                    status[index] = 3;
                     throw new RuntimeException(e.getMessage());
                 }
             }
@@ -420,13 +463,11 @@ public class ParallelUploader {
 
     }
 
-    private Response uploadRequest(int retry, Request.Builder builder) {
+    private Response uploadRequest(Request.Builder builder) {
 
         try {
             Response response = mClient.newCall(builder.build()).execute();
-            if (!response.isSuccessful() && retry < retryTime) {
-                return uploadRequest(++retry, builder);
-            } else if (!response.isSuccessful() && retry >= retryTime) {
+            if (!response.isSuccessful()) {
                 throw new RuntimeException(response.body().string());
             } else {
                 if (onProgressListener != null) {
@@ -437,11 +478,7 @@ public class ParallelUploader {
             return response;
 
         } catch (IOException e) {
-            if (retry < retryTime) {
-                return uploadRequest(++retry, builder);
-            } else {
-                throw new RuntimeException(e.toString());
-            }
+            throw new RuntimeException(e.toString());
         }
     }
 
@@ -475,6 +512,7 @@ public class ParallelUploader {
         callRequest(builder.build(), totalBlock);
 
         uuid = null;
+        status = null;
         return true;
     }
 

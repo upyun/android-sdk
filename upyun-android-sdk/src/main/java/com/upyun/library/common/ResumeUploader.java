@@ -13,6 +13,7 @@ import okhttp3.*;
 
 
 import java.io.*;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -128,13 +129,13 @@ public class ResumeUploader {
     /**
      * 开始上传
      *
-     * @param file       本地上传文件
-     * @param uploadPath 上传服务器路径
-     * @param params     通用上传参数（见 rest api 文档）
+     * @param file   本地上传文件
+     * @param path   上传服务器路径
+     * @param params 通用上传参数（见 rest api 文档）
      * @return 是否上传成功
      * @throws IOException
      */
-    public boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException {
+    public boolean upload(File file, String path, Map<String, String> params) throws IOException, UpYunException {
 
         this.mFile = file;
 
@@ -142,8 +143,11 @@ public class ResumeUploader {
 
         this.randomAccessFile = new RandomAccessFile(mFile, "r");
 
-        this.uploadPath = uploadPath;
-
+        if (path.startsWith("/")) {
+            this.uploadPath = "/" + URLEncoder.encode(path.substring(1));
+        } else {
+            this.uploadPath = "/" + URLEncoder.encode(path);
+        }
         this.url = HOST + "/" + bucketName + uploadPath;
 
         this.mClient = new OkHttpClient.Builder()
