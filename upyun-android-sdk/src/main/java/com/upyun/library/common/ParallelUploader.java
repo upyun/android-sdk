@@ -1,7 +1,5 @@
 package com.upyun.library.common;
 
-import android.util.Log;
-
 import com.upyun.library.exception.UpYunException;
 import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
@@ -12,6 +10,7 @@ import com.upyun.library.utils.UpYunUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -33,6 +32,7 @@ public class ParallelUploader {
 
     private static final String AUTHORIZATION = "Authorization";
     private static final int BLOCK_SIZE = 1024 * 1024;
+    private static final String BACKSLASH = "/";
 
     private final String DATE = "Date";
 
@@ -49,8 +49,8 @@ public class ParallelUploader {
     private static final String X_UPYUN_PART_ID = "X-Upyun-Part-ID";
     private static final String HOST = "https://v0.api.upyun.com";
 
+
     private String uuid;
-    private String uploadPath;
     private OkHttpClient mClient;
     private File mFile;
     private RandomAccessFile randomAccessFile;
@@ -63,6 +63,17 @@ public class ParallelUploader {
     protected String userName = null;
     // 操作员密码
     protected String password = null;
+
+    // 请求路径
+    private String uri = null;
+    // 请求日期时间
+    private String date = null;
+    // Authorization 签名
+    private String signature = null;
+
+    //服务端签名
+    private boolean signed;
+
     //超时设置(s)
     private int timeout = 20;
 
@@ -76,6 +87,7 @@ public class ParallelUploader {
 
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
+
     public void setParalle(int paralle) {
         this.paralle = paralle;
     }
@@ -83,25 +95,28 @@ public class ParallelUploader {
     //并行式断点并行数
     private int paralle = 4;
 
-    public void setRetryTime(int retryTime) {
-        this.retryTime = retryTime;
-    }
-
-    //并行式断点分块重试册数
-    private int retryTime = 2;
+    //分块上传状态 1 成功 2 上传中 3 上传失败
+    private int[] status;
 
     /**
-     * 初始化 ResumeUploader
+     * 初始化 ParallelUploader
      *
      * @param bucketName 空间名称
      * @param userName   操作员名称
      * @param password   密码，需要MD5加密
-     * @return ResumeUploader object
+     * @return ParallelUploader object
      */
     public ParallelUploader(String bucketName, String userName, String password) {
         this.bucketName = bucketName;
         this.userName = userName;
         this.password = password;
+    }
+
+    /**
+     * 初始化 ParallelUploader（服务端签名可用）
+     *
+     */
+    public ParallelUploader() {
     }
 
     public void setTimeout(int timeout) {
@@ -111,29 +126,81 @@ public class ParallelUploader {
     /**
      * 开始上传
      *
-     * @param file       本地上传文件
-     * @param uploadPath 上传服务器路径
-     * @param params     通用上传参数（见 rest api 文档）
+     * @param file   本地上传文件
+     * @param path   上传服务器路径
+     * @param params 通用上传参数（见 rest api 文档）
      * @return 是否上传成功
      * @throws IOException
      */
-    public boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException {
+    public boolean upload(File file, String path, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException {
 
         this.mFile = file;
+
+        this.signed = false;
 
         this.totalBlock = (int) Math.ceil(mFile.length() / (double) BLOCK_SIZE + 2);
 
         this.randomAccessFile = new RandomAccessFile(mFile, "r");
 
-        this.uploadPath = uploadPath;
+        if (path.startsWith(BACKSLASH)) {
+            this.uri = BACKSLASH + bucketName + BACKSLASH + URLEncoder.encode(path.substring(1));
+        } else {
+            this.uri = BACKSLASH + bucketName + BACKSLASH + URLEncoder.encode(path);
+        }
 
-        this.url = HOST + "/" + bucketName + uploadPath;
+        this.url = HOST + uri;
 
         this.mClient = new OkHttpClient.Builder()
                 .connectTimeout(timeout, TimeUnit.SECONDS)
                 .readTimeout(timeout, TimeUnit.SECONDS)
                 .writeTimeout(timeout, TimeUnit.SECONDS)
                 .build();
+
+        if (status == null || status.length != totalBlock - 2 || uuid == null) {
+            status = new int[totalBlock - 2];
+        }
+
+        return startUpload(params);
+    }
+
+    /**
+     * 开始上传(服务器签名)
+     *
+     * @param file      本地上传文件
+     * @param uri       请求路径
+     * @param date      请求日期时间
+     * @param signature 签名
+     * @param params    通用上传参数（见 rest api 文档）
+     * @return 是否上传成功
+     * @throws IOException
+     */
+    public boolean upload(File file, String uri, String date, String signature, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException {
+
+        this.signed = true;
+
+        this.mFile = file;
+
+        this.uri = uri;
+
+        this.date = date;
+
+        this.signature = signature;
+
+        this.totalBlock = (int) Math.ceil(mFile.length() / (double) BLOCK_SIZE + 2);
+
+        this.randomAccessFile = new RandomAccessFile(mFile, "r");
+
+        this.url = HOST + uri;
+
+        this.mClient = new OkHttpClient.Builder()
+                .connectTimeout(timeout, TimeUnit.SECONDS)
+                .readTimeout(timeout, TimeUnit.SECONDS)
+                .writeTimeout(timeout, TimeUnit.SECONDS)
+                .build();
+
+        if (status == null || status.length != totalBlock - 2 || uuid == null) {
+            status = new int[totalBlock - 2];
+        }
 
         return startUpload(params);
     }
@@ -147,13 +214,12 @@ public class ParallelUploader {
      * @param processParam     异步处理上传参数 （见 云处理 api 文档）
      * @param completeListener 成功失败回调
      */
-    public void upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener) {
+    public void upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener) throws UpYunException {
 
         if (processParam == null) {
             upload(file, uploadPath, restParams, completeListener);
             return;
         }
-
 
         final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
@@ -220,6 +286,57 @@ public class ParallelUploader {
         });
     }
 
+
+    /**
+     * 异步上传(服务器签名)
+     *
+     * @param file             本地上传文件
+     * @param uri              请求路径(带空间名)
+     * @param date             请求日期时间
+     * @param signature        签名
+     * @param restParams       通用上传参数（见 rest api 文档）
+     * @param completeListener 成功失败回调
+     */
+    public void upload(final File file, final String uri, final String date, final String signature, final Map<String, String> restParams, final UpCompleteListener completeListener) {
+
+        final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
+            @Override
+            public void onComplete(final boolean isSuccess, final String result) {
+                AsyncRun.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (completeListener != null) {
+                            completeListener.onComplete(isSuccess, result);
+                        }
+                    }
+                });
+            }
+        };
+
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    upload(file, uri, date, signature, restParams);
+                    uiCompleteListener.onComplete(true, null);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                } catch (UpYunException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                    uiCompleteListener.onComplete(false, e.toString());
+                }
+            }
+        });
+    }
+
+
     /**
      * 异步上传
      *
@@ -278,6 +395,33 @@ public class ParallelUploader {
 
 
     /**
+     * 设置 uuid
+     *
+     * @param uuid
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * 获取分块状态
+     *
+     * @return
+     */
+    public int[] getStatus() {
+        return status;
+    }
+
+    /**
+     * 设置分块状态
+     *
+     * @param status
+     */
+    public void setStatus(int[] status) {
+        this.status = status;
+    }
+
+    /**
      * 设置是否 MD5 校验
      *
      * @param checkMD5 是否 MD5 校验
@@ -303,7 +447,6 @@ public class ParallelUploader {
 
         RequestBody requestBody = RequestBody.create(null, "");
 
-        String date = getGMTDate();
 
         String md5 = null;
 
@@ -311,12 +454,15 @@ public class ParallelUploader {
             md5 = UpYunUtils.md5("");
         }
 
-        String sign = sign("PUT", date, "/" + bucketName + uploadPath, userName, password, md5).trim();
+        if (!signed) {
+            date = getGMTDate();
+            signature = sign("PUT", date, uri, userName, password, md5).trim();
+        }
 
         Request.Builder builder = new Request.Builder()
                 .url(url)
                 .header(DATE, date)
-                .header(AUTHORIZATION, sign)
+                .header(AUTHORIZATION, signature)
                 .header(X_UPYUN_MULTI_DISORDER, "true")
                 .header(X_UPYUN_MULTI_STAGE, "initiate")
                 .header(X_UPYUN_MULTI_TYPE, "application/octet-stream")
@@ -378,13 +524,22 @@ public class ParallelUploader {
             public void run() {
 
                 try {
-                    byte[] data = readBlockByIndex(index);
+                    if (status[index] == 1) {
+                        if (onProgressListener != null) {
+                            onProgressListener.onRequestProgress(blockProgress + 2, totalBlock);
+                        }
+                        blockProgress++;
+                        return;
+                    } else if (status[index] == 2) {
+                        return;
+                    }
 
-                    int retry = 0;
+                    status[index] = 2;
+
+                    byte[] data = readBlockByIndex(index);
 
                     RequestBody requestBody = RequestBody.create(null, data);
 
-                    String date = getGMTDate();
 
                     String md5 = null;
 
@@ -392,12 +547,15 @@ public class ParallelUploader {
                         md5 = UpYunUtils.md5(data);
                     }
 
-                    String sign = sign("PUT", date, "/" + bucketName + uploadPath, userName, password, md5).trim();
+                    if (!signed) {
+                        date = getGMTDate();
+                        signature = sign("PUT", date, uri, userName, password, md5).trim();
+                    }
 
                     Request.Builder builder = new Request.Builder()
                             .url(url)
                             .header(DATE, date)
-                            .header(AUTHORIZATION, sign)
+                            .header(AUTHORIZATION, signature)
                             .header(X_UPYUN_MULTI_STAGE, "upload")
                             .header(X_UPYUN_MULTI_UUID, uuid)
                             .header(X_UPYUN_PART_ID, index + "")
@@ -408,11 +566,11 @@ public class ParallelUploader {
                         builder.header(CONTENT_MD5, md5);
                     }
 
-                    Response response = uploadRequest(retry, builder);
+                    uploadRequest(builder);
 
-                    uuid = response.header(X_UPYUN_MULTI_UUID, "");
-
+                    status[index] = 1;
                 } catch (Exception e) {
+                    status[index] = 3;
                     throw new RuntimeException(e.getMessage());
                 }
             }
@@ -420,13 +578,15 @@ public class ParallelUploader {
 
     }
 
-    private Response uploadRequest(int retry, Request.Builder builder) {
+    private Response uploadRequest(Request.Builder builder) {
 
         try {
             Response response = mClient.newCall(builder.build()).execute();
-            if (!response.isSuccessful() && retry < retryTime) {
-                return uploadRequest(++retry, builder);
-            } else if (!response.isSuccessful() && retry >= retryTime) {
+            if (!response.isSuccessful()) {
+                int x_error_code = Integer.parseInt(response.header("X-Error-Code", "-1"));
+                if (x_error_code == 40011061 || x_error_code == 40011059) {
+                    uuid = null;
+                }
                 throw new RuntimeException(response.body().string());
             } else {
                 if (onProgressListener != null) {
@@ -437,11 +597,7 @@ public class ParallelUploader {
             return response;
 
         } catch (IOException e) {
-            if (retry < retryTime) {
-                return uploadRequest(++retry, builder);
-            } else {
-                throw new RuntimeException(e.toString());
-            }
+            throw new RuntimeException(e.toString());
         }
     }
 
@@ -449,20 +605,22 @@ public class ParallelUploader {
 
         RequestBody requestBody = RequestBody.create(null, "");
 
-        String date = getGMTDate();
-
         String md5 = null;
 
         if (checkMD5) {
             md5 = UpYunUtils.md5("");
         }
 
-        String sign = sign("PUT", date, "/" + bucketName + uploadPath, userName, password, md5).trim();
+        if (!signed) {
+            date = getGMTDate();
+            signature = sign("PUT", date, uri, userName, password, md5).trim();
+        }
+
 
         Request.Builder builder = new Request.Builder()
                 .url(url)
                 .header(DATE, date)
-                .header(AUTHORIZATION, sign)
+                .header(AUTHORIZATION, signature)
                 .header(X_UPYUN_MULTI_STAGE, "complete")
                 .header(X_UPYUN_MULTI_UUID, uuid)
                 .header("User-Agent", UpYunUtils.VERSION)
@@ -475,6 +633,7 @@ public class ParallelUploader {
         callRequest(builder.build(), totalBlock);
 
         uuid = null;
+        status = null;
         return true;
     }
 
@@ -510,7 +669,6 @@ public class ParallelUploader {
         String sp = "&";
         sb.append(method);
         sb.append(sp);
-//        sb.append("/" + bucket + path);
         sb.append(path);
 
         sb.append(sp);
@@ -549,10 +707,6 @@ public class ParallelUploader {
             return notFullBlock;
         }
         return block;
-    }
-
-    public interface OnInterruptListener {
-        void OnInterrupt(boolean interrupted);
     }
 
     public class Params {
