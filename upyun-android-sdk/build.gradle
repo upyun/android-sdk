@@ -30,7 +30,7 @@ publish {
     userOrg = 'upyun'
     groupId = 'com.upyun'
     artifactId = 'upyun-android-sdk'
-    publishVersion = '2.0.8'
+    publishVersion = '2.0.9'
     desc = 'A upload sdk on Android'
     website = 'https://github.com/upyun/android-sdk'
 }

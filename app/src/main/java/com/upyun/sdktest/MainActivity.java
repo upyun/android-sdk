@@ -12,8 +12,10 @@ import com.upyun.library.common.ParallelUploader;
 import com.upyun.library.common.Params;
 import com.upyun.library.common.ResumeUploader;
 import com.upyun.library.common.UploadEngine;
+import com.upyun.library.exception.UpYunException;
 import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
+import com.upyun.library.utils.Base64Coder;
 import com.upyun.library.utils.UpYunUtils;
 
 import org.json.JSONArray;
@@ -25,8 +27,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class MainActivity extends Activity implements View.OnClickListener {
 
@@ -60,12 +66,24 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
     @SuppressLint("SdCardPath")
     private static final String SAMPLE_PIC_FILE = "/mnt/sdcard/tdtest.mp4";
+    private ParallelUploader parallelUploader;
+    private ResumeUploader resumeUploader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
+
+
+        //初始化断点续传
+        resumeUploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
+
+        //初始化断点续传
+        parallelUploader = new ParallelUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
+
+        //初始化断点续传 (服务端签名可用)
+//        parallelUploader = new ParallelUploader();
     }
 
     private void initView() {
@@ -169,14 +187,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         File file = new File(SAMPLE_PIC_FILE);
 
-        //初始化断点续传
-        ResumeUploader uploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
-
         //设置 MD5 校验
-        uploader.setCheckMD5(true);
+        resumeUploader.setCheckMD5(true);
 
         //设置进度监听
-        uploader.setOnProgressListener(new UpProgressListener() {
+        resumeUploader.setOnProgressListener(new UpProgressListener() {
             @Override
             public void onRequestProgress(long bytesWrite, long contentLength) {
                 bp_resume.setProgress((int) ((100 * bytesWrite) / contentLength));
@@ -216,7 +231,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         processParam.put(ResumeUploader.Params.TASKS, array);
 
         //串行断点上传
-//        uploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
+//        resumeUploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
 //            @Override
 //            public void onComplete(boolean isSuccess, String result) {
 //                Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
@@ -224,7 +239,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //        });
 
         //带异步处理参数的断点上传
-        uploader.upload(file, "/test.mp4", null, processParam, new UpCompleteListener() {
+        resumeUploader.upload(file, "/1/test{「你好.mp4", null, processParam, new UpCompleteListener() {
             @Override
             public void onComplete(boolean isSuccess, String result) {
                 Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
@@ -236,14 +251,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         File file = new File(SAMPLE_PIC_FILE);
 
-        //初始化断点续传
-        ParallelUploader uploader = new ParallelUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
-
         //设置 MD5 校验
-        uploader.setCheckMD5(true);
+        parallelUploader.setCheckMD5(true);
 
         //设置进度监听
-        uploader.setOnProgressListener(new UpProgressListener() {
+        parallelUploader.setOnProgressListener(new UpProgressListener() {
             @Override
             public void onRequestProgress(long bytesWrite, long contentLength) {
                 bp_parallel.setProgress((int) ((100 * bytesWrite) / contentLength));
@@ -251,29 +263,85 @@ public class MainActivity extends Activity implements View.OnClickListener {
             }
         });
 
-        uploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
+
+        parallelUploader.upload(file, "/11.test", null, new UpCompleteListener() {
             @Override
             public void onComplete(boolean isSuccess, String result) {
                 Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
             }
         });
 
-//        uploader.upload(file, "/test.mp4", null, processParam, new UpCompleteListener() {
-//            @Override
-//            public void onComplete(boolean isSuccess, String result) {
-//                Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
-//            }
-//        });
+
+        //请求路径(带空间名)
+//        String uri = "/" + SPACE + "/11.test";
+//        //请求日期时间
+//        String date = getGMTDate();
+//        //签名
+//        String sign = null;
+//        try {
+//            sign = sign("PUT", date, uri, OPERATER, UpYunUtils.md5(PASSWORD), null);
+//        } catch (UpYunException e) {
+//            e.printStackTrace();
+//        }
+//
+//        //设置 MD5 校验 （服务端签名不可校验）
+//        parallelUploader.setCheckMD5(false);
+//
+//        //服务端签名
+//        parallelUploader.upload(file, uri, date, sign,
+//                null, new UpCompleteListener() {
+//                    @Override
+//                    public void onComplete(boolean isSuccess, String result) {
+//                        Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
+//                    }
+//                });
     }
 
 
     private File getTempFile() throws IOException {
-        File temp = File.createTempFile("你好啊啊", "test");
+        File temp = File.createTempFile("test", "test");
         temp.deleteOnExit();
         OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(temp));
         outputStream.write("just for test !".getBytes());
         outputStream.close();
         return temp;
+    }
+
+    private String sign(String method, String date, String path, String userName, String password, String md5) throws UpYunException {
+
+        StringBuilder sb = new StringBuilder();
+        String sp = "&";
+        sb.append(method);
+        sb.append(sp);
+        sb.append(path);
+
+        sb.append(sp);
+        sb.append(date);
+
+        if (md5 != null) {
+            sb.append(sp);
+            sb.append(md5);
+        }
+        String raw = sb.toString().trim();
+        byte[] hmac = null;
+        try {
+            hmac = UpYunUtils.calculateRFC2104HMACRaw(password, raw);
+        } catch (Exception e) {
+            throw new UpYunException("calculate SHA1 wrong.");
+        }
+
+        if (hmac != null) {
+            return "UPYUN " + userName + ":" + Base64Coder.encodeLines(hmac);
+        }
+
+        return null;
+    }
+
+    private String getGMTDate() {
+        SimpleDateFormat formater = new SimpleDateFormat(
+                "EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
+        formater.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return formater.format(new Date());
     }
 
     @Override

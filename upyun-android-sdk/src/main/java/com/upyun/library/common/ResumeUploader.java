@@ -68,8 +68,6 @@ public class ResumeUploader {
 
     private UpProgressListener onProgressListener;
 
-    private OnInterruptListener onInterruptListener;
-
     private int totalBlock;
 
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -534,10 +532,6 @@ public class ResumeUploader {
             return notFullBlock;
         }
         return block;
-    }
-
-    public interface OnInterruptListener {
-        void OnInterrupt(boolean interrupted);
     }
 
     public class Params {
