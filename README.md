@@ -17,7 +17,7 @@ UPYUN Android SDK, 集成：
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
 ```
-compile 'com.upyun:upyun-android-sdk:2.0.8'
+compile 'com.upyun:upyun-android-sdk:2.0.9'
 ```
 
 3.DEMO 示例在 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
@@ -92,13 +92,16 @@ uploader.upload(final File file, final String uploadPath, final Map<String, Stri
 
 ```
 //初始化断点续传
-ParallelUploader uploader = new ParallelUploader(SPACE,OPERATER,UpYunUtils.md5(PASSWORD));
+ParallelUploader parallelUploader = new ParallelUploader(SPACE,OPERATER,UpYunUtils.md5(PASSWORD));
 
-//设置 MD5 校验
-uploader.setCheckMD5(true);
+//初始化断点续传 (服务端签名可用)
+ParallelUploader parallelUploader = new ParallelUploader();
+
+//设置 MD5 校验(服务端签名方式不可校验 MD5)
+parallelUploader(true);
 
 //设置进度监听
-uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
+parallelUploader(new ResumeUploader.OnProgressListener() {
       @Override
       public void onProgress(int index, int total) {
       }
@@ -106,13 +109,15 @@ uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
 
 //开始断点续传，可用方法 1 或方法 2
 //方法 1
-uploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final UpCompleteListener completeListener)
+parallelUploader(final File file, final String uploadPath, final Map<String, String> restParams, final UpCompleteListener completeListener)
 
 //方法 2
-uploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener)
+parallelUploader(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener)
+
+//服务端签名方式
+parallelUploader.upload(final File file, final String uri, final String date, final String signature, final Map<String, String> restParams, final UpCompleteListener completeListener)
 
 ```
-
 
 参数说明：
 
@@ -121,6 +126,13 @@ uploader.upload(final File file, final String uploadPath, final Map<String, Stri
 * `restParams ` rest api 上传预处理参数可为空 （详见[文档](http://docs.upyun.com/api/rest_api/#_17)）
 * `processParam `  异步音视频处理参数 （详见[文档](http://docs.upyun.com/cloud/av/)）
 * `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
+
+服务器签名参数：
+
+* `uri `  请求路径(带空间名)
+* `date `  请求日期时间
+* `signature` 服务端签名
+
 
 ### 表单上传（旧）
 
