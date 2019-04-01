@@ -12,12 +12,12 @@ UPYUN Android SDK, 集成：
 
 ## 使用说明：
 
-1.直接[下载 JAR 包](https://github.com/upyun/android-sdk/tree/master/release-lib/1.0.3)复制进项目使用, SDK 依赖 [okhttp](http://square.github.io/okhttp/)。（2.0 以后不再提供 jar 包下载）
+1.SDK 依赖 [okhttp](http://square.github.io/okhttp/)。
 
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
 ```
-compile 'com.upyun:upyun-android-sdk:2.0.9'
+compile 'com.upyun:upyun-android-sdk:2.1.0'
 ```
 
 3.DEMO 示例在 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。
@@ -63,28 +63,29 @@ UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, complet
 
 ### 串行式断点续传
 
-2.0 提供一种新的上传方式可以用来代替分块上传，使用方式如下：
-
 ```
 //初始化断点续传
-ResumeUploader uploader = new ResumeUploader(SPACE,OPERATER,UpYunUtils.md5(PASSWORD));
+SerialUploader serialUploader = new SerialUploader(SPACE,OPERATER,UpYunUtils.md5(PASSWORD));
 
-//设置 MD5 校验
-uploader.setCheckMD5(true);
+//设置 MD5 校验(服务端签名方式不可校验 MD5)
+serialUploader.setCheckMD5(true);
 
 //设置进度监听
-uploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
+serialUploader.setOnProgressListener(new ResumeUploader.OnProgressListener() {
       @Override
       public void onProgress(int index, int total) {
       }
 });
 
+//暂停
+serialUploader.pause()
+
 //开始断点续传，可用方法 1 或方法 2
 //方法 1
-uploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final UpCompleteListener completeListener)
+serialUploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final UpCompleteListener completeListener)
 
 //方法 2
-uploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener)
+serialUploader.upload(final File file, final String uploadPath, final Map<String, String> restParams, final Map<String, Object> processParam, final UpCompleteListener completeListener)
 
 ```
 
@@ -106,6 +107,9 @@ parallelUploader(new ResumeUploader.OnProgressListener() {
       public void onProgress(int index, int total) {
       }
 });
+
+//暂停
+parallelUploader.pause()
 
 //开始断点续传，可用方法 1 或方法 2
 //方法 1
