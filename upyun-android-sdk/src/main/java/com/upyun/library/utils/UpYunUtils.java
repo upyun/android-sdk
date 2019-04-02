@@ -1,6 +1,7 @@
 package com.upyun.library.utils;
 
 import com.upyun.library.common.UpConfig;
+import com.upyun.library.exception.UpYunException;
 
 import org.json.JSONObject;
 
@@ -23,10 +24,9 @@ import javax.crypto.spec.SecretKeySpec;
 public class UpYunUtils {
 
 
-
     private static final String HMAC_SHA1_ALGORITHM = "HmacSHA1";
 
-    public static final String VERSION = "upyun-android-sdk 2.0.9";
+    public static final String VERSION = "upyun-android-sdk 2.1.0";
 
     /**
      * 计算policy
@@ -190,6 +190,36 @@ public class UpYunUtils {
         mac.init(signingKey);
         // Compute the hmac on input data bytes
         return mac.doFinal(data.getBytes());
+    }
+
+    public static String sign(String method, String date, String path, String userName, String password, String md5) throws UpYunException {
+
+        StringBuilder sb = new StringBuilder();
+        String sp = "&";
+        sb.append(method);
+        sb.append(sp);
+        sb.append(path);
+
+        sb.append(sp);
+        sb.append(date);
+
+        if (md5 != null && md5.length() > 0) {
+            sb.append(sp);
+            sb.append(md5);
+        }
+        String raw = sb.toString().trim();
+        byte[] hmac = null;
+        try {
+            hmac = calculateRFC2104HMACRaw(password, raw);
+        } catch (Exception e) {
+            throw new UpYunException("calculate SHA1 wrong.");
+        }
+
+        if (hmac != null) {
+            return "UPYUN " + userName + ":" + Base64Coder.encodeLines(hmac).trim();
+        }
+
+        return null;
     }
 }
 

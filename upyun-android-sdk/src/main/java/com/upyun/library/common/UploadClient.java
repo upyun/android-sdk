@@ -6,6 +6,7 @@ import com.upyun.library.utils.UpYunUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -36,7 +37,7 @@ public class UploadClient {
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("policy", policy)
                 .addFormDataPart("authorization", "UPYUN " + operator + ":" + signature)
-                .addFormDataPart("file", "file", RequestBody.create(null, file))
+                .addFormDataPart("file", URLEncoder.encode(file.getName()), RequestBody.create(null, file))
                 .build();
 
         if (listener != null) {
@@ -64,7 +65,7 @@ public class UploadClient {
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("policy", policy)
                 .addFormDataPart("signature", signature)
-                .addFormDataPart("file", "file", RequestBody.create(null, file))
+                .addFormDataPart("file",  URLEncoder.encode(file.getName()), RequestBody.create(null, file))
                 .build();
 
         if (listener != null) {

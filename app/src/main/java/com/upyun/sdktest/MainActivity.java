@@ -8,9 +8,10 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.upyun.library.common.BaseUploader;
 import com.upyun.library.common.ParallelUploader;
 import com.upyun.library.common.Params;
-import com.upyun.library.common.ResumeUploader;
+import com.upyun.library.common.SerialUploader;
 import com.upyun.library.common.UploadEngine;
 import com.upyun.library.exception.UpYunException;
 import com.upyun.library.listener.UpCompleteListener;
@@ -42,15 +43,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
     //操作员
     public static String OPERATER = "one";
     //密码
-    public static String PASSWORD = "****";
+    public static String PASSWORD = "******";
 
     private ProgressBar bp_form;
 
     private TextView tv_form;
 
-    private ProgressBar bp_resume;
+    private ProgressBar bp_serial;
 
-    private TextView tv_resume;
+    private TextView tv_serial;
 
     private ProgressBar bp_parallel;
 
@@ -67,7 +68,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     @SuppressLint("SdCardPath")
     private static final String SAMPLE_PIC_FILE = "/mnt/sdcard/tdtest.mp4";
     private ParallelUploader parallelUploader;
-    private ResumeUploader resumeUploader;
+    private SerialUploader serialUploader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +78,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 
         //初始化断点续传
-        resumeUploader = new ResumeUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
+        serialUploader = new SerialUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
 
         //初始化断点续传
         parallelUploader = new ParallelUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
@@ -93,14 +94,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
         findViewById(R.id.bt_form).setOnClickListener(this);
 
 
-        bp_resume = findViewById(R.id.pb_resume);
-        tv_resume = findViewById(R.id.tv_resume);
-        findViewById(R.id.bt_resume).setOnClickListener(this);
+        bp_serial = findViewById(R.id.pb_serial);
+        tv_serial = findViewById(R.id.tv_serial);
+        findViewById(R.id.bt_serial).setOnClickListener(this);
+        findViewById(R.id.bt_serial_pause).setOnClickListener(this);
 
         bp_parallel = findViewById(R.id.pb_parallel);
         tv_parallel = findViewById(R.id.tv_parallel);
 
         findViewById(R.id.bt_parallel).setOnClickListener(this);
+        findViewById(R.id.bt_parallel_pause).setOnClickListener(this);
     }
 
     private void formUpload() {
@@ -183,18 +186,18 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //        UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener);
     }
 
-    public void resumeUpload() {
+    public void serialUpload() {
 
         File file = new File(SAMPLE_PIC_FILE);
 
         //设置 MD5 校验
-        resumeUploader.setCheckMD5(true);
+        serialUploader.setCheckMD5(true);
 
         //设置进度监听
-        resumeUploader.setOnProgressListener(new UpProgressListener() {
+        serialUploader.setOnProgressListener(new UpProgressListener() {
             @Override
             public void onRequestProgress(long bytesWrite, long contentLength) {
-                bp_resume.setProgress((int) ((100 * bytesWrite) / contentLength));
+                bp_serial.setProgress((int) ((100 * bytesWrite) / contentLength));
                 Log.e(TAG, bytesWrite + ":" + contentLength);
             }
         });
@@ -202,36 +205,36 @@ public class MainActivity extends Activity implements View.OnClickListener {
         //初始化异步音视频处理参数,参数规则详见http://docs.upyun.com/cloud/av/#_3
         Map<String, Object> processParam = new HashMap<String, Object>();
 
-        processParam.put(ResumeUploader.Params.BUCKET_NAME, SPACE);
-        processParam.put(ResumeUploader.Params.NOTIFY_URL, "http://httpbin.org/post");
-        processParam.put(ResumeUploader.Params.ACCEPT, "json");
-        processParam.put(ResumeUploader.Params.SOURCE, "/test.mp4");
+        processParam.put(BaseUploader.Params.BUCKET_NAME, SPACE);
+        processParam.put(BaseUploader.Params.NOTIFY_URL, "http://httpbin.org/post");
+        processParam.put(BaseUploader.Params.ACCEPT, "json");
+        processParam.put(BaseUploader.Params.SOURCE, "/test.mp4");
 
         JSONArray array = new JSONArray();
 
         try {
             JSONObject json = new JSONObject();
-            json.put(ResumeUploader.Params.TYPE, "video");
-            json.put(ResumeUploader.Params.AVOPTS, "/s/240p(4:3)/as/1/r/30");
-            json.put(ResumeUploader.Params.RETURN_INFO, "true");
-            json.put(ResumeUploader.Params.SAVE_AS, "testProcess.mp4");
+            json.put(BaseUploader.Params.TYPE, "video");
+            json.put(BaseUploader.Params.AVOPTS, "/s/240p(4:3)/as/1/r/30");
+            json.put(BaseUploader.Params.RETURN_INFO, "true");
+            json.put(BaseUploader.Params.SAVE_AS, "testProcess.mp4");
 
             JSONObject json2 = new JSONObject();
 
-            json2.put(ResumeUploader.Params.TYPE, "video");
-            json2.put(ResumeUploader.Params.AVOPTS, "/s/240p(4:3)/as/1/r/30");
-            json2.put(ResumeUploader.Params.RETURN_INFO, "true");
-            json2.put(ResumeUploader.Params.SAVE_AS, "testProcess2.mp4");
+            json2.put(BaseUploader.Params.TYPE, "video");
+            json2.put(BaseUploader.Params.AVOPTS, "/s/240p(4:3)/as/1/r/30");
+            json2.put(BaseUploader.Params.RETURN_INFO, "true");
+            json2.put(BaseUploader.Params.SAVE_AS, "testProcess2.mp4");
             array.put(json2);
             array.put(json);
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
-        processParam.put(ResumeUploader.Params.TASKS, array);
+        processParam.put(BaseUploader.Params.TASKS, array);
 
         //串行断点上传
-//        resumeUploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
+//        serialUploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
 //            @Override
 //            public void onComplete(boolean isSuccess, String result) {
 //                Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
@@ -239,12 +242,38 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //        });
 
         //带异步处理参数的断点上传
-        resumeUploader.upload(file, "/1/test{「你好.mp4", null, processParam, new UpCompleteListener() {
+        serialUploader.upload(file, "/1/test{「你好.mp4", null, processParam, new UpCompleteListener() {
             @Override
             public void onComplete(boolean isSuccess, String result) {
                 Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
             }
         });
+
+
+        //请求路径(带空间名)
+//        String uri = "/" + SPACE + "/11.test";
+//        //请求日期时间
+//        String date = getGMTDate();
+//        //签名
+//        String sign = null;
+//        try {
+//            sign = sign("PUT", date, uri, OPERATER, UpYunUtils.md5(PASSWORD), null);
+//        } catch (UpYunException e) {
+//            e.printStackTrace();
+//        }
+//
+//        //设置 MD5 校验 （服务端签名不可校验）
+//        serialUploader.setCheckMD5(false);
+//
+//        //服务端签名
+//        serialUploader.upload(file, uri, date, sign,
+//                null, new UpCompleteListener() {
+//                    @Override
+//                    public void onComplete(boolean isSuccess, String result) {
+//                        Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
+//                    }
+//                });
+
     }
 
     public void parallelUpload() {
@@ -350,11 +379,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
             case R.id.bt_form:
                 formUpload();
                 break;
-            case R.id.bt_resume:
-                resumeUpload();
+            case R.id.bt_serial:
+                serialUpload();
                 break;
             case R.id.bt_parallel:
                 parallelUpload();
+                break;
+            case R.id.bt_serial_pause:
+                serialUploader.pause();
+                break;
+            case R.id.bt_parallel_pause:
+                parallelUploader.pause();
                 break;
         }
     }

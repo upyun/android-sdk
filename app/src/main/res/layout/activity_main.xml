@@ -3,17 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
     tools:context="com.upyun.sdktest.MainActivity">
 
     <LinearLayout
         android:id="@+id/ll_form"
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
         <TextView
             android:id="@+id/tv_form"
             android:layout_width="wrap_content"
@@ -36,38 +37,61 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/ll_resume"
-        android:layout_below="@id/ll_form"
-        android:orientation="vertical"
+        android:id="@+id/ll_serial"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ll_form"
+        android:orientation="vertical">
+
         <TextView
-            android:id="@+id/tv_resume"
+            android:id="@+id/tv_serial"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
         <ProgressBar
-            android:id="@+id/pb_resume"
+            android:id="@+id/pb_serial"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
             android:indeterminate="false" />
 
-        <Button
-            android:id="@+id/bt_resume"
-            android:layout_width="wrap_content"
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="串行式断点上传" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/bt_serial"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="串行式断点上传" />
+
+
+            <Button
+                android:id="@+id/bt_serial_pause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="暂停" />
+
+            <!--<Button-->
+                <!--android:id="@+id/bt_serial_serial"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:text="续传" />-->
+
+        </LinearLayout>
 
     </LinearLayout>
 
     <LinearLayout
-        android:layout_below="@id/ll_resume"
         android:id="@+id/ll_parallel"
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ll_serial"
+        android:orientation="vertical">
+
         <TextView
             android:id="@+id/tv_parallel"
             android:layout_width="wrap_content"
@@ -81,11 +105,26 @@
             android:layout_centerHorizontal="true"
             android:indeterminate="false" />
 
-        <Button
-            android:id="@+id/bt_parallel"
-            android:layout_width="wrap_content"
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="并行式断点上传" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/bt_parallel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="并行式断点上传" />
+
+
+            <Button
+                android:id="@+id/bt_parallel_pause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="暂停" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

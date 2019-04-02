@@ -26,11 +26,15 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.12.2'
 }
 
+tasks.withType(Javadoc).all {
+    enabled = false
+}
+
 publish {
     userOrg = 'upyun'
     groupId = 'com.upyun'
     artifactId = 'upyun-android-sdk'
-    publishVersion = '2.0.9'
+    publishVersion = '2.1.0'
     desc = 'A upload sdk on Android'
     website = 'https://github.com/upyun/android-sdk'
 }
