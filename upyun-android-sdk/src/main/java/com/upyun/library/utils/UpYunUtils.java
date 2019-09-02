@@ -26,7 +26,7 @@ public class UpYunUtils {
 
     private static final String HMAC_SHA1_ALGORITHM = "HmacSHA1";
 
-    public static final String VERSION = "upyun-android-sdk 2.1.0";
+    public static final String VERSION = "upyun-android-sdk 2.1.1";
 
     /**
      * 计算policy
@@ -99,6 +99,7 @@ public class UpYunUtils {
             while ((length = in.read(buffer)) > 0) {
                 messageDigest.update(buffer, 0, length);
             }
+            in.close();
             byte[] hash = messageDigest.digest();
             StringBuilder hex = new StringBuilder(hash.length * 2);
             for (byte b : hash) {
@@ -124,6 +125,7 @@ public class UpYunUtils {
             while ((length = in.read(buffer)) > 0) {
                 messageDigest.update(buffer, 0, length);
             }
+            in.close();
             byte[] hash = messageDigest.digest();
             StringBuilder hex = new StringBuilder(hash.length * 2);
             for (byte b : hash) {
