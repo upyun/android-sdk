@@ -37,7 +37,7 @@ proguard/
 # Android Studio Navigation editor temp files
 .navigation/
 
-/.gitignore
+*.DS_Store
 ### Android template
 # Built application files
 *.apk

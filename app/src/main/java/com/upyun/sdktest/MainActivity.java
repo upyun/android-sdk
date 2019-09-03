@@ -1,8 +1,13 @@
 package com.upyun.sdktest;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -43,7 +48,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     //操作员
     public static String OPERATER = "one";
     //密码
-    public static String PASSWORD = "******";
+    public static String PASSWORD = "****";
 
     private ProgressBar bp_form;
 
@@ -70,12 +75,25 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private ParallelUploader parallelUploader;
     private SerialUploader serialUploader;
 
+    //读写权限
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    //请求状态码
+    private static int REQUEST_PERMISSION_CODE = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initView();
 
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, PERMISSIONS_STORAGE, REQUEST_PERMISSION_CODE);
+            }
+        }
+
+        initView();
 
         //初始化断点续传
         serialUploader = new SerialUploader(SPACE, OPERATER, UpYunUtils.md5(PASSWORD));
@@ -92,7 +110,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         tv_form = findViewById(R.id.tv_form);
 
         findViewById(R.id.bt_form).setOnClickListener(this);
-
 
         bp_serial = findViewById(R.id.pb_serial);
         tv_serial = findViewById(R.id.tv_serial);
@@ -115,18 +132,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //        }
 
         temp = new File(SAMPLE_PIC_FILE);
-
         final Map<String, Object> paramsMap = new HashMap<>();
         //上传空间
         paramsMap.put(Params.BUCKET, SPACE);
-        //保存路径，任选其中一个
+        //保存路径
         paramsMap.put(Params.SAVE_KEY, savePath);
         //添加 CONTENT_LENGTH 参数使用大文件表单上传
         paramsMap.put(Params.CONTENT_LENGTH, temp.length());
-
-
+        //上传文件的 MD5 值，如果请求中文件太大计算 MD5 不方便，可以为空
         paramsMap.put(Params.CONTENT_MD5, UpYunUtils.md5Hex(temp));
-//        paramsMap.put(Params.PATH, savePath);
         //可选参数（详情见api文档介绍）
         paramsMap.put(Params.RETURN_URL, "httpbin.org/post");
         //进度回调，可为空
@@ -148,7 +162,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 Log.e(TAG, isSuccess + ":" + result);
             }
         };
-
 
         //初始化JSONArray，上传预处理（异步）参数详见 http://docs.upyun.com/cloud/image/#_6，
         JSONArray array = new JSONArray();
@@ -180,7 +193,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         //表单上传（本地签名方式）
         UploadEngine.getInstance().formUpload(temp, paramsMap, OPERATER, UpYunUtils.md5(PASSWORD), completeListener, progressListener);
-
 
         //表单上传（服务器签名方式）
 //        UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, completeListener, progressListener);
@@ -391,6 +403,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
             case R.id.bt_parallel_pause:
                 parallelUploader.pause();
                 break;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_PERMISSION_CODE) {
+            for (int i = 0; i < permissions.length; i++) {
+                Log.i("MainActivity", "申请的权限为：" + permissions[i] + ",申请结果：" + grantResults[i]);
+            }
         }
     }
 }
