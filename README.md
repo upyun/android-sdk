@@ -59,7 +59,7 @@ UploadEngine.getInstance().formUpload(temp, policy, OPERATER, signature, complet
 * `completeListener`  结束回调(回调到 UI 线程，不可为 NULL)
 * `progressListener`  进度条回调(回调到 UI 线程，可为 NULL)
 * `policy`  从服务器获取的 policy（生成规则见[官网文档](http://docs.upyun.com/api/authorization/)）
-* `progressListener`  从服务器获取的 signature（生成规则见[官网文档](http://docs.upyun.com/api/authorization/)）
+* `signature `  从服务器获取的 signature（生成规则见[官网文档](http://docs.upyun.com/api/authorization/) 注：Authorization = UPYUN 操作员:signature）
 
 ### 串行式断点续传
 
@@ -135,7 +135,7 @@ parallelUploader.upload(final File file, final String uri, final String date, fi
 
 * `uri `  请求路径(带空间名)
 * `date `  请求日期时间
-* `signature` 服务端签名
+* `signature` 服务端签名(注：Authorization = UPYUN 操作员:signature)
 
 
 ### 表单上传（旧）
