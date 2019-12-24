@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import okhttp3.Response;
+
 public class UploadEngine {
     private static UploadEngine instance;
     private ExecutorService executor;
@@ -56,11 +58,11 @@ public class UploadEngine {
 
         UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
-            public void onComplete(final boolean isSuccess, final String result) {
+            public void onComplete(final boolean isSuccess, final Response response, final Exception error) {
                 AsyncRun.run(new Runnable() {
                     @Override
                     public void run() {
-                        completeListener.onComplete(isSuccess, result);
+                        completeListener.onComplete(isSuccess, response, error);
                     }
                 });
             }
@@ -90,11 +92,11 @@ public class UploadEngine {
 
         UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
-            public void onComplete(final boolean isSuccess, final String result) {
+            public void onComplete(final boolean isSuccess, final Response response, final Exception error) {
                 AsyncRun.run(new Runnable() {
                     @Override
                     public void run() {
-                        completeListener.onComplete(isSuccess, result);
+                        completeListener.onComplete(isSuccess, response, error);
                     }
                 });
             }

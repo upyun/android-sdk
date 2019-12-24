@@ -1,6 +1,7 @@
 package com.upyun.library.common;
 
 import com.upyun.library.exception.RespException;
+import com.upyun.library.exception.UpYunException;
 import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
 import com.upyun.library.utils.Base64Coder;
@@ -16,10 +17,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.Map;
 
+import okhttp3.Response;
+
 public class FormUploader2 implements Runnable {
 
-
-    private static final String TAG = "FormUploader2";
     private UploadClient client;
     private File file;
     private String bucket;
@@ -34,7 +35,7 @@ public class FormUploader2 implements Runnable {
     private String password;
 
 
-    public FormUploader2(UploadClient upLoaderClient, File file, Map<String, Object> localParams, String operator, String password, UpCompleteListener uiCompleteListener, UpProgressListener uiProgressListener) {
+    FormUploader2(UploadClient upLoaderClient, File file, Map<String, Object> localParams, String operator, String password, UpCompleteListener uiCompleteListener, UpProgressListener uiProgressListener) {
         this.client = upLoaderClient;
         this.file = file;
         this.bucket = (String) localParams.get(Params.BUCKET);
@@ -46,7 +47,7 @@ public class FormUploader2 implements Runnable {
         this.password = password;
     }
 
-    public FormUploader2(UploadClient upLoaderClient, File file, String policy, String operator, String signature, UpCompleteListener uiCompleteListener, UpProgressListener uiProgressListener) {
+    FormUploader2(UploadClient upLoaderClient, File file, String policy, String operator, String signature, UpCompleteListener uiCompleteListener, UpProgressListener uiProgressListener) {
         this.client = upLoaderClient;
         this.file = file;
 
@@ -63,7 +64,6 @@ public class FormUploader2 implements Runnable {
         this.progressListener = uiProgressListener;
         this.operator = operator;
     }
-
 
     @Override
     public void run() {
@@ -102,13 +102,13 @@ public class FormUploader2 implements Runnable {
             try {
                 hmac = UpYunUtils.calculateRFC2104HMACRaw(password, raw);
             } catch (SignatureException e) {
-                completeListener.onComplete(false, "签名计算失败");
+                completeListener.onComplete(false, null, e);
                 return;
             } catch (NoSuchAlgorithmException e) {
-                completeListener.onComplete(false, "找不到 SHA1 算法");
+                completeListener.onComplete(false, null, e);
                 return;
             } catch (InvalidKeyException e) {
-                completeListener.onComplete(false, "password 错误");
+                completeListener.onComplete(false, null, e);
                 return;
             }
 
@@ -116,17 +116,17 @@ public class FormUploader2 implements Runnable {
                 this.signature = Base64Coder.encodeLines(hmac);
             }
         } else {
-            completeListener.onComplete(false, "参数错误");
+            completeListener.onComplete(false, null, new UpYunException("参数错误"));
             return;
         }
 
         String url = UpConfig.FORM_HOST + "/" + bucket;
         try {
-            String response = client.fromUpLoad2(file, url, policy, operator, signature, progressListener);
-            completeListener.onComplete(true, response);
+            Response response = client.fromUpLoad2(file, url, policy, operator, signature, progressListener);
+            completeListener.onComplete(true, response,null);
         } catch (IOException | RespException e) {
             if (++retryTime > UpConfig.RETRY_TIME || (e instanceof RespException && ((RespException) e).code() / 100 != 5)) {
-                completeListener.onComplete(false, e.toString());
+                completeListener.onComplete(false, null,e);
             } else {
                 this.run();
             }

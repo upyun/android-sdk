@@ -40,6 +40,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import okhttp3.Response;
+
 public class MainActivity extends Activity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
@@ -124,14 +126,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }
 
     private void formUpload() {
-        File temp = null;
+        File temp = new File(SAMPLE_PIC_FILE);
 //        try {
 //            temp = getTempFile();
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
 
-        temp = new File(SAMPLE_PIC_FILE);
         final Map<String, Object> paramsMap = new HashMap<>();
         //上传空间
         paramsMap.put(Params.BUCKET, SPACE);
@@ -140,7 +141,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         //添加 CONTENT_LENGTH 参数使用大文件表单上传
         paramsMap.put(Params.CONTENT_LENGTH, temp.length());
         //上传文件的 MD5 值，如果请求中文件太大计算 MD5 不方便，可以为空
-        paramsMap.put(Params.CONTENT_MD5, UpYunUtils.md5Hex(temp));
+//        paramsMap.put(Params.CONTENT_MD5, UpYunUtils.md5Hex(temp));
         //可选参数（详情见api文档介绍）
         paramsMap.put(Params.RETURN_URL, "httpbin.org/post");
         //进度回调，可为空
@@ -148,7 +149,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
             @Override
             public void onRequestProgress(long bytesWrite, long contentLength) {
                 bp_form.setProgress((int) ((100 * bytesWrite) / contentLength));
-                tv_form.setText((100 * bytesWrite) / contentLength + "%");
+//                tv_form.setText((100 * bytesWrite) / contentLength + "%");
                 Log.e(TAG, (100 * bytesWrite) / contentLength + "%");
                 Log.e(TAG, bytesWrite + "::" + contentLength);
             }
@@ -157,9 +158,19 @@ public class MainActivity extends Activity implements View.OnClickListener {
         //结束回调，不可为空
         UpCompleteListener completeListener = new UpCompleteListener() {
             @Override
-            public void onComplete(boolean isSuccess, String result) {
-                tv_form.setText(isSuccess + ":" + result);
-                Log.e(TAG, isSuccess + ":" + result);
+            public void onComplete(boolean isSuccess, Response response, Exception error) {
+                try {
+                    String result = null;
+                    if (response != null) {
+                        result = response.body().string();
+                    } else if (error != null) {
+                        result = error.toString();
+                    }
+                    tv_form.setText("isSuccess:" + isSuccess + " result:" + result);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
             }
         };
 
@@ -246,20 +257,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
         processParam.put(BaseUploader.Params.TASKS, array);
 
         //串行断点上传
-//        serialUploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
+        serialUploader.upload(file, "/test.mp4", null, new UpCompleteListener() {
+            @Override
+            public void onComplete(boolean isSuccess, Response response, Exception error) {
+                Log.e(TAG, "isSuccess:" + isSuccess + " response:" + response + " error:" + error);
+                tv_serial.setText("isSuccess:" + isSuccess + " response:" + response + " error:" + error);
+            }
+        });
+
+        //带异步处理参数的断点上传
+//        serialUploader.upload(file, "/1/test{「你好.mp4", null, processParam, new UpCompleteListener() {
 //            @Override
 //            public void onComplete(boolean isSuccess, String result) {
 //                Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
 //            }
 //        });
-
-        //带异步处理参数的断点上传
-        serialUploader.upload(file, "/1/test{「你好.mp4", null, processParam, new UpCompleteListener() {
-            @Override
-            public void onComplete(boolean isSuccess, String result) {
-                Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
-            }
-        });
 
 
         //请求路径(带空间名)
@@ -307,8 +319,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         parallelUploader.upload(file, "/11.test", null, new UpCompleteListener() {
             @Override
-            public void onComplete(boolean isSuccess, String result) {
-                Log.e(TAG, "isSuccess:" + isSuccess + "  result:" + result);
+            public void onComplete(boolean isSuccess, Response response, Exception error) {
+                Log.e(TAG, "isSuccess:" + isSuccess + " response:" + response + " error:" + error);
+                tv_parallel.setText("isSuccess:" + isSuccess + " response:" + response + " error:" + error);
             }
         });
 

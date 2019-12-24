@@ -18,7 +18,7 @@ public class ProgressRequestBody extends RequestBody {
     private final UpProgressListener progressListener;
     private BufferedSink bufferedSink;
 
-    public ProgressRequestBody(RequestBody requestBody, UpProgressListener progressListener) {
+    ProgressRequestBody(RequestBody requestBody, UpProgressListener progressListener) {
         this.requestBody = requestBody;
         this.progressListener = progressListener;
     }

@@ -20,7 +20,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.squareup.okhttp3:okhttp:4.1.0'
+    api 'com.squareup.okhttp3:okhttp:4.2.1'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
@@ -34,7 +34,7 @@ publish {
     userOrg = 'upyun'
     groupId = 'com.upyun'
     artifactId = 'upyun-android-sdk'
-    publishVersion = '2.1.1'
+    publishVersion = '2.1.2'
     desc = 'A upload sdk on Android'
     website = 'https://github.com/upyun/android-sdk'
 }

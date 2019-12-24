@@ -1,12 +1,12 @@
 package com.upyun.library.common;
 
+import com.upyun.library.exception.RespException;
 import com.upyun.library.exception.UpYunException;
 import com.upyun.library.utils.UpYunUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -14,17 +14,16 @@ import okhttp3.Response;
 
 public class SerialUploader extends BaseUploader {
 
-    private int nextPartIndex;
-
     /**
      * 断点续传
      *
      * @param uuid          上传任务 uuid
      * @param nextPartIndex 下一个上传分块 index
-     * @return
+     * @return 服务器返回结果
      * @throws IOException
+     * @throws UpYunException
      */
-    public boolean resume(String uuid, int nextPartIndex) throws IOException, UpYunException {
+    public Response resume(String uuid, int nextPartIndex) throws IOException, UpYunException {
 
         this.uuid = uuid;
         this.nextPartIndex = nextPartIndex;
@@ -43,17 +42,12 @@ public class SerialUploader extends BaseUploader {
      * @param bucketName 空间名称
      * @param userName   操作员名称
      * @param password   密码，不需要MD5加密
-     * @return SerialUploader object
      */
     public SerialUploader(String bucketName, String userName, String password) {
         super(bucketName, userName, password);
     }
 
-    /**
-     * 初始化 SerialUploader
-     */
     public SerialUploader() {
-        super();
     }
 
     /**
@@ -62,16 +56,16 @@ public class SerialUploader extends BaseUploader {
      * @param file       本地上传文件路径
      * @param uploadPath 上传服务器路径
      * @param params     通用上传参数（见 rest api 文档）
-     * @return 是否上传成功
+     * @return 服务器返回结果
      * @throws IOException
+     * @throws UpYunException
      */
 
     @Override
-    public boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException {
+    public Response upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException {
         init(file, uploadPath, params);
         return startUpload();
     }
-
 
     /**
      * 开始上传(服务器签名)
@@ -81,11 +75,11 @@ public class SerialUploader extends BaseUploader {
      * @param date      请求日期时间
      * @param signature 签名
      * @param params    通用上传参数（见 rest api 文档）
-     * @return 是否上传成功
+     * @return 服务器返回结果
      * @throws IOException
      */
     @Override
-    public boolean upload(File file, String uri, String date, String signature, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException {
+    public Response upload(File file, String uri, String date, String signature, Map<String, String> params) throws IOException, UpYunException {
         init(file, uri, date, signature, params);
         return startUpload();
     }
@@ -107,7 +101,7 @@ public class SerialUploader extends BaseUploader {
         this.nextPartIndex = nextPartIndex;
     }
 
-    boolean processUpload() throws IOException, UpYunException {
+    Response processUpload() throws IOException, UpYunException {
         byte[] data;
 
         while (nextPartIndex >= 0) {
@@ -141,6 +135,12 @@ public class SerialUploader extends BaseUploader {
                     .header("User-Agent", UpYunUtils.VERSION)
                     .put(requestBody);
 
+            if (params != null) {
+                for (Map.Entry<String, String> entry : params.entrySet()) {
+                    builder.header(entry.getKey(), entry.getValue());
+                }
+            }
+
             if (md5 != null) {
                 builder.header(CONTENT_MD5, md5);
             }
@@ -154,10 +154,14 @@ public class SerialUploader extends BaseUploader {
         return completeUpload();
     }
 
-    boolean completeUpload() throws IOException, UpYunException {
-        completeRequest();
+    Response completeUpload() throws IOException, UpYunException {
+        Response response = completeRequest();
         uuid = null;
-        return true;
+        if (!response.isSuccessful()) {
+            throw new RespException(response.code(), response.body().string());
+        }
+        nextPartIndex = 0;
+        return response;
     }
 
     private void callProcessRequest(Request request) throws IOException, UpYunException {
@@ -169,7 +173,7 @@ public class SerialUploader extends BaseUploader {
                 randomAccessFile = null;
             }
             uuid = null;
-            throw new UpYunException(response.body().string());
+            throw new RespException(response.code(), response.body().string());
         } else {
             uuid = response.header(X_UPYUN_MULTI_UUID, "");
             nextPartIndex = Integer.parseInt(response.header(X_UPYUN_NEXT_PART_ID, "-2"));
