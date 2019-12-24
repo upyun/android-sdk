@@ -1,5 +1,6 @@
 package com.upyun.library.common;
 
+import com.upyun.library.exception.RespException;
 import com.upyun.library.exception.UpYunException;
 import com.upyun.library.utils.UpYunUtils;
 
@@ -38,7 +39,7 @@ public class ParallelUploader extends BaseUploader {
      * @return
      * @throws IOException
      */
-    public boolean resume(String uuid, int[] status) throws IOException, UpYunException {
+    public Response resume(String uuid, int[] status) throws IOException, UpYunException {
 
         this.uuid = uuid;
         this.status = status;
@@ -50,7 +51,6 @@ public class ParallelUploader extends BaseUploader {
             return startUpload();
         }
     }
-
 
     /**
      * 初始化 ParallelUploader
@@ -81,10 +81,10 @@ public class ParallelUploader extends BaseUploader {
      * @param file       本地上传文件
      * @param uploadPath 上传服务器路径
      * @param params     通用上传参数（见 rest api 文档）
-     * @return 是否上传成功
+     * @return 服务器返回结果
      * @throws IOException
      */
-    public boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException {
+    public Response upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException {
 
         init(file, uploadPath, params);
 
@@ -106,11 +106,12 @@ public class ParallelUploader extends BaseUploader {
      * @param date      请求日期时间
      * @param signature 签名
      * @param params    通用上传参数（见 rest api 文档）
-     * @return 是否上传成功
+     * @return 服务器返回结果
      * @throws IOException
+     * @throws UpYunException
      */
     @Override
-    public boolean upload(File file, String uri, String date, String signature, Map<String, String> params) throws IOException, UpYunException {
+    public Response upload(File file, String uri, String date, String signature, Map<String, String> params) throws IOException, UpYunException {
 
         init(file, uri, date, signature, params);
 
@@ -141,7 +142,7 @@ public class ParallelUploader extends BaseUploader {
         this.status = status;
     }
 
-    boolean processUpload() throws IOException, UpYunException {
+    Response processUpload() throws IOException, UpYunException {
 
         blockProgress = 0;
 
@@ -219,12 +220,17 @@ public class ParallelUploader extends BaseUploader {
                             .header("User-Agent", UpYunUtils.VERSION)
                             .put(requestBody);
 
+                    if (params != null) {
+                        for (Map.Entry<String, String> entry : params.entrySet()) {
+                            builder.header(entry.getKey(), entry.getValue());
+                        }
+                    }
+
                     if (md5 != null) {
                         builder.header(CONTENT_MD5, md5);
                     }
 
                     Response response = uploadRequest(builder);
-
                     uuid = response.header(X_UPYUN_MULTI_UUID, "");
                     status[index] = 1;
                 } catch (Exception e) {
@@ -233,16 +239,15 @@ public class ParallelUploader extends BaseUploader {
                 }
             }
         };
-
     }
 
-    private Response uploadRequest(Request.Builder builder) {
+    private Response uploadRequest(Request.Builder builder) throws UpYunException {
 
         try {
             Response response = mClient.newCall(builder.build()).execute();
             if (!response.isSuccessful()) {
                 uuid = null;
-                throw new RuntimeException(response.body().string());
+                throw new RespException(response.code(), response.body().string());
             } else {
                 if (onProgressListener != null) {
                     onProgressListener.onRequestProgress(blockProgress + 2, totalBlock);
@@ -252,14 +257,17 @@ public class ParallelUploader extends BaseUploader {
             return response;
 
         } catch (IOException e) {
-            throw new RuntimeException(e.toString());
+            throw new UpYunException(e.toString());
         }
     }
 
-    boolean completeUpload() throws IOException, UpYunException {
-        completeRequest();
+    Response completeUpload() throws IOException, UpYunException {
+        Response response = completeRequest();
         status = null;
         uuid = null;
-        return true;
+        if (!response.isSuccessful()) {
+            throw new RespException(response.code(), response.body().string());
+        }
+        return response;
     }
 }

@@ -26,7 +26,7 @@ public class UpYunUtils {
 
     private static final String HMAC_SHA1_ALGORITHM = "HmacSHA1";
 
-    public static final String VERSION = "upyun-android-sdk 2.1.1";
+    public static final String VERSION = "upyun-android-sdk 2.1.2";
 
     /**
      * 计算policy

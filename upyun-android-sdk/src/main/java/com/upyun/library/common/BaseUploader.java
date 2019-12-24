@@ -1,5 +1,6 @@
 package com.upyun.library.common;
 
+import com.upyun.library.exception.RespException;
 import com.upyun.library.exception.UpYunException;
 import com.upyun.library.listener.UpCompleteListener;
 import com.upyun.library.listener.UpProgressListener;
@@ -29,6 +30,8 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public abstract class BaseUploader {
+
+    int nextPartIndex;
     static final String AUTHORIZATION = "Authorization";
     final static String BACKSLASH = "/";
     static final int BLOCK_SIZE = 1024 * 1024;
@@ -36,7 +39,7 @@ public abstract class BaseUploader {
     final String DATE = "Date";
 
     static final String CONTENT_MD5 = "Content-MD5";
-    static final String CONTENT_TYPE = "CContent-Type";
+    static final String CONTENT_TYPE = "Content-Type";
     static final String CONTENT_SECRET = "Content-Secret";
     static final String X_Upyun_Meta_X = "X-Upyun-Meta-X";
 
@@ -50,7 +53,7 @@ public abstract class BaseUploader {
 
     static final String HOST = "https://v0.api.upyun.com";
 
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     Map<String, String> params;
 
@@ -62,7 +65,7 @@ public abstract class BaseUploader {
     String uuid;
     String uri;
     OkHttpClient mClient;
-    File mFile;
+    private File mFile;
     RandomAccessFile randomAccessFile;
 
     boolean checkMD5;
@@ -90,13 +93,13 @@ public abstract class BaseUploader {
     /**
      * 断点续传
      *
-     * @return 是否上传成功
+     * @return 服务器返回结果
      * @throws IOException
+     * @throws UpYunException
      */
-    public boolean resume() throws IOException, UpYunException {
+    public Response resume() throws IOException, UpYunException {
         this.paused = false;
         return startUpload();
-
     }
 
 
@@ -106,16 +109,14 @@ public abstract class BaseUploader {
      * @param bucketName 空间名称
      * @param userName   操作员名称
      * @param password   密码，需要MD5加密
-     * @return SerialUploader object
      */
-    public BaseUploader(String bucketName, String userName, String password) {
+    BaseUploader(String bucketName, String userName, String password) {
         this.bucketName = bucketName;
         this.userName = userName;
         this.password = password;
     }
 
-    public BaseUploader() {
-
+    BaseUploader() {
     }
 
     public void setTimeout(int timeout) {
@@ -154,6 +155,7 @@ public abstract class BaseUploader {
                 .connectTimeout(timeout, TimeUnit.SECONDS)
                 .readTimeout(timeout, TimeUnit.SECONDS)
                 .writeTimeout(timeout, TimeUnit.SECONDS)
+//                .addInterceptor(new LogInterceptor())
                 .build();
     }
 
@@ -194,10 +196,11 @@ public abstract class BaseUploader {
      * @param file       本地上传文件
      * @param uploadPath 上传服务器路径
      * @param params     通用上传参数（见 rest api 文档）
-     * @return 是否上传成功
+     * @return 服务器返回结果
      * @throws IOException
+     * @throws UpYunException
      */
-    abstract boolean upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException;
+    abstract Response upload(File file, String uploadPath, Map<String, String> params) throws IOException, UpYunException;
 
     /**
      * 开始上传(服务器签名)
@@ -207,10 +210,10 @@ public abstract class BaseUploader {
      * @param date      请求日期时间
      * @param signature 签名
      * @param params    通用上传参数（见 rest api 文档）
-     * @return 是否上传成功
+     * @return 服务器返回结果
      * @throws IOException
      */
-    abstract boolean upload(File file, String uri, String date, String signature, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException;
+    abstract Response upload(File file, String uri, String date, String signature, Map<String, String> params) throws IOException, UpYunException, ExecutionException, InterruptedException;
 
     /**
      * 获取 uuid
@@ -248,7 +251,7 @@ public abstract class BaseUploader {
         this.onProgressListener = onProgressListener;
     }
 
-    boolean startUpload() throws IOException, UpYunException {
+    Response startUpload() throws IOException, UpYunException {
 
         if (paused) {
             throw new UpYunException("upload paused");
@@ -301,11 +304,11 @@ public abstract class BaseUploader {
         return processUpload();
     }
 
-    abstract boolean processUpload() throws IOException, UpYunException;
+    abstract Response processUpload() throws IOException, UpYunException;
 
-    abstract boolean completeUpload() throws IOException, UpYunException;
+    abstract Response completeUpload() throws IOException, UpYunException;
 
-    void completeRequest() throws UpYunException, IOException {
+    Response completeRequest() throws UpYunException, IOException {
 
         if (randomAccessFile != null) {
             randomAccessFile.close();
@@ -334,30 +337,31 @@ public abstract class BaseUploader {
                 .header("User-Agent", UpYunUtils.VERSION)
                 .put(requestBody);
 
+        if (params != null) {
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                builder.header(entry.getKey(), entry.getValue());
+            }
+        }
+
         if (md5 != null) {
             builder.header(CONTENT_MD5, md5);
         }
-
-        callRequest(builder.build(), totalBlock);
+        return callRequest(builder.build(), totalBlock);
     }
 
-    Response callRequest(Request request, int index) throws IOException, UpYunException {
+    private Response callRequest(Request request, int index) throws IOException, UpYunException {
 
         Response response = mClient.newCall(request).execute();
         if (!response.isSuccessful()) {
-//            int x_error_code = Integer.parseInt(response.header("X-Error-Code", "-1"));
-//            if (x_error_code == 40011061 || x_error_code == 40011059) {
-                uuid = null;
-//            }
-            throw new UpYunException(response.body().string());
+            uuid = null;
+            throw new RespException(response.code(), response.body().string());
         } else {
             if (onProgressListener != null) {
                 onProgressListener.onRequestProgress(index, totalBlock);
             }
         }
-
         uuid = response.header(X_UPYUN_MULTI_UUID, "");
-
+        nextPartIndex = Integer.parseInt(response.header(X_UPYUN_NEXT_PART_ID, "-2"));
         return response;
     }
 
@@ -367,23 +371,23 @@ public abstract class BaseUploader {
      * @return GMT 格式时间戳
      */
     String getGMTDate() {
-        SimpleDateFormat formater = new SimpleDateFormat(
+        SimpleDateFormat format = new SimpleDateFormat(
                 "EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
-        formater.setTimeZone(TimeZone.getTimeZone("GMT"));
-        return formater.format(new Date());
+        format.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return format.format(new Date());
     }
 
     byte[] readBlockByIndex(int index) throws IOException {
         byte[] block = new byte[BLOCK_SIZE];
-        int readedSize = 0;
+        int readSize = 0;
         int offset = index * BLOCK_SIZE;
         randomAccessFile.seek(offset);
-        readedSize = randomAccessFile.read(block, 0, BLOCK_SIZE);
+        readSize = randomAccessFile.read(block, 0, BLOCK_SIZE);
 
         // read last block, adjust byte size
-        if (readedSize < BLOCK_SIZE) {
-            byte[] notFullBlock = new byte[readedSize];
-            System.arraycopy(block, 0, notFullBlock, 0, readedSize);
+        if (readSize < BLOCK_SIZE) {
+            byte[] notFullBlock = new byte[readSize];
+            System.arraycopy(block, 0, notFullBlock, 0, readSize);
             return notFullBlock;
         }
         return block;
@@ -405,15 +409,14 @@ public abstract class BaseUploader {
             return;
         }
 
-
         final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
-            public void onComplete(final boolean isSuccess, final String result) {
+            public void onComplete(final boolean isSuccess, final Response response, final Exception error) {
                 AsyncRun.run(new Runnable() {
                     @Override
                     public void run() {
                         if (completeListener != null) {
-                            completeListener.onComplete(isSuccess, result);
+                            completeListener.onComplete(isSuccess, response, error);
                         }
                     }
                 });
@@ -438,7 +441,7 @@ public abstract class BaseUploader {
                         builder.addEncoded(mapping.getKey(), mapping.getValue().toString());
                     }
 
-                    String processURL = "http://p0.api.upyun.com/pretreatment/";
+                    String processURL = "https://p0.api.upyun.com/pretreatment/";
                     Request request = new Request.Builder()
                             .url(processURL)
                             .post(builder.build())
@@ -450,16 +453,16 @@ public abstract class BaseUploader {
                     Response response = mClient.newCall(request).execute();
 
                     if (!response.isSuccessful()) {
-                        uiCompleteListener.onComplete(false, response.body().string());
+                        uiCompleteListener.onComplete(false, null, new RespException(response.code(), response.body().toString()));
                     } else {
-                        uiCompleteListener.onComplete(true, response.body().string());
+                        uiCompleteListener.onComplete(true, response, null);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
-                    uiCompleteListener.onComplete(false, e.toString());
+                    uiCompleteListener.onComplete(false, null, e);
                 } catch (UpYunException e) {
                     e.printStackTrace();
-                    uiCompleteListener.onComplete(false, e.toString());
+                    uiCompleteListener.onComplete(false, null, e);
                 }
             }
         });
@@ -477,12 +480,12 @@ public abstract class BaseUploader {
 
         final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
-            public void onComplete(final boolean isSuccess, final String result) {
+            public void onComplete(final boolean isSuccess, final Response response, final Exception e) {
                 AsyncRun.run(new Runnable() {
                     @Override
                     public void run() {
                         if (completeListener != null) {
-                            completeListener.onComplete(isSuccess, result);
+                            completeListener.onComplete(isSuccess, response, e);
                         }
                     }
                 });
@@ -493,14 +496,13 @@ public abstract class BaseUploader {
             @Override
             public void run() {
                 try {
-                    upload(file, uploadPath, restParams);
-                    uiCompleteListener.onComplete(true, null);
+                    uiCompleteListener.onComplete(true, upload(file, uploadPath, restParams), null);
                 } catch (IOException e) {
                     e.printStackTrace();
-                    uiCompleteListener.onComplete(false, e.toString());
+                    uiCompleteListener.onComplete(false, null, e);
                 } catch (UpYunException e) {
                     e.printStackTrace();
-                    uiCompleteListener.onComplete(false, e.toString());
+                    uiCompleteListener.onComplete(false, null, e);
                 }
             }
         });
@@ -520,12 +522,12 @@ public abstract class BaseUploader {
 
         final UpCompleteListener uiCompleteListener = new UpCompleteListener() {
             @Override
-            public void onComplete(final boolean isSuccess, final String result) {
+            public void onComplete(final boolean isSuccess, final Response response, final Exception error) {
                 AsyncRun.run(new Runnable() {
                     @Override
                     public void run() {
                         if (completeListener != null) {
-                            completeListener.onComplete(isSuccess, result);
+                            completeListener.onComplete(isSuccess, response, error);
                         }
                     }
                 });
@@ -536,20 +538,19 @@ public abstract class BaseUploader {
             @Override
             public void run() {
                 try {
-                    upload(file, uri, date, signature, restParams);
-                    uiCompleteListener.onComplete(true, null);
+                    uiCompleteListener.onComplete(true, upload(file, uri, date, signature, restParams), null);
                 } catch (IOException e) {
                     e.printStackTrace();
-                    uiCompleteListener.onComplete(false, e.toString());
+                    uiCompleteListener.onComplete(false, null, e);
                 } catch (UpYunException e) {
                     e.printStackTrace();
-                    uiCompleteListener.onComplete(false, e.toString());
+                    uiCompleteListener.onComplete(false, null, e);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
-                    uiCompleteListener.onComplete(false, e.toString());
+                    uiCompleteListener.onComplete(false, null, e);
                 } catch (ExecutionException e) {
                     e.printStackTrace();
-                    uiCompleteListener.onComplete(false, e.toString());
+                    uiCompleteListener.onComplete(false, null, e);
                 }
             }
         });
