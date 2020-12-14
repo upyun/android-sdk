@@ -453,7 +453,7 @@ public abstract class BaseUploader {
                     Response response = mClient.newCall(request).execute();
 
                     if (!response.isSuccessful()) {
-                        uiCompleteListener.onComplete(false, null, new RespException(response.code(), response.body().toString()));
+                        uiCompleteListener.onComplete(false, null, new RespException(response.code(), response.body().string()));
                     } else {
                         uiCompleteListener.onComplete(true, response, null);
                     }
