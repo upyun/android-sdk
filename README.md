@@ -16,7 +16,7 @@ UPYUN Android SDK, 集成：
 2.SDK 已经上传 Jcenter，Android Studio 的用户可以直接在 gradle 中添加一条 dependencies:
 
 ```
-implementation 'com.upyun:upyun-android-sdk:2.1.2'
+implementation 'com.upyun:upyun-android-sdk:2.1.3'
 ```
 
 3.DEMO 示例在 app module 下的 [MainActivity](https://github.com/upyun/android-sdk/blob/master/app/src/main/java/com/upyun/sdktest/MainActivity.java)。

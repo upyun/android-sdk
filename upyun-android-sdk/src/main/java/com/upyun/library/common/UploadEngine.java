@@ -68,8 +68,7 @@ public class UploadEngine {
             }
         };
 
-        Map<String, Object> localParams = new HashMap<>();
-        localParams.putAll(params);
+        Map<String, Object> localParams = new HashMap<>(params);
         Runnable uploadRunnable = new FormUploader2(upLoaderClient, file, localParams, operator, password, uiCompleteListener, uiProgressListener);
         executor.execute(uploadRunnable);
     }
