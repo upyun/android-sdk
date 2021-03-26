@@ -377,10 +377,10 @@ public abstract class BaseUploader {
         return format.format(new Date());
     }
 
-    byte[] readBlockByIndex(int index) throws IOException {
+    byte[] readBlockByIndex(long index) throws IOException {
         byte[] block = new byte[BLOCK_SIZE];
         int readSize = 0;
-        int offset = index * BLOCK_SIZE;
+        long offset = index * BLOCK_SIZE;
         randomAccessFile.seek(offset);
         readSize = randomAccessFile.read(block, 0, BLOCK_SIZE);
 
