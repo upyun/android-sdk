@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -17,7 +18,7 @@ import okhttp3.Response;
 
 public class UploadClient {
 
-    private OkHttpClient client;
+    private final OkHttpClient client;
 
     UploadClient() {
         client = new OkHttpClient.Builder()
@@ -34,7 +35,7 @@ public class UploadClient {
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("policy", policy)
                 .addFormDataPart("authorization", "UPYUN " + operator + ":" + signature)
-                .addFormDataPart("file", URLEncoder.encode(file.getName()), RequestBody.create(null, file))
+                .addFormDataPart("file", URLEncoder.encode(file.getName()), RequestBody.create(MediaType.parse("application/octet-stream"), file))
                 .build();
 
         if (listener != null) {

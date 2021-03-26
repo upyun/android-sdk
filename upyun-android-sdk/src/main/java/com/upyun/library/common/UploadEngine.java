@@ -14,8 +14,8 @@ import okhttp3.Response;
 
 public class UploadEngine {
     private static UploadEngine instance;
-    private ExecutorService executor;
-    private UploadClient upLoaderClient;
+    private final ExecutorService executor;
+    private final UploadClient upLoaderClient;
 
     private UploadEngine() {
         executor = Executors.newFixedThreadPool(UpConfig.CONCURRENCY);
